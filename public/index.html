@@ -65,6 +65,16 @@ section:first-child{margin-top:4px}
 .banner{background:color-mix(in srgb,#f2a516 16%,var(--panel));border:1px solid color-mix(in srgb,#f2a516 55%,transparent);color:var(--text);border-radius:12px;padding:11px 14px 11px 40px;font-size:13.5px;margin-bottom:16px;position:relative;line-height:1.55}
 .banner::before{content:"⚠";position:absolute;left:14px;top:10px;font-size:16px;color:#d48806}
 .banner a{color:var(--accent);font-weight:600;margin-left:6px}
+.sig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sc{padding:16px 18px;display:flex;flex-direction:column}
+.sc .lbl{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;font-weight:650;color:var(--text2)}
+.sc .sbig{font-size:26px;font-weight:750;letter-spacing:-.03em;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sc .rows{margin-top:8px;display:grid;gap:4px;font-size:13px}
+.sc .rows div{display:flex;justify-content:space-between;gap:8px}
+.sc .rows span{color:var(--muted)}
+.sc .note{margin-top:auto;padding-top:12px;font-size:12px;color:var(--text2);line-height:1.5}
+.sc .note b{color:var(--accent);font-weight:700}
+.sc .note p{margin:0;padding:8px 10px;background:var(--panel2);border-radius:8px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
 
 /* hero */
@@ -186,6 +196,7 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
 
 @media (max-width:1280px){.hero{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:1000px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.trow{grid-template-columns:minmax(130px,2fr) 1fr 1fr 100px 28px}.trow .c52{display:none}}
+@media (max-width:900px){.sig{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:640px){
   .bar{padding:10px 16px;gap:8px}.brand{flex:1;order:0}.bar>.spacer,.mkts{display:none}.ibtn{order:1}
 .upd{order:3;width:100%;justify-content:flex-end;margin-top:-2px}
@@ -212,6 +223,11 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
 <main>
   <div class="banner" id="banner" role="status" style="display:none"></div>
   <section><div class="hero" id="hero"></div></section>
+
+  <section>
+    <div class="sh"><h2>경제 신호</h2><small>시장 흐름을 읽는 보조 지표</small></div>
+    <div class="sig" id="sig"></div>
+  </section>
 
   <section>
     <div class="sh"><h2>오늘의 등락률</h2><small>전일 종가 대비 · 타일을 누르면 상세 차트</small>
@@ -465,7 +481,7 @@ function renderMkts(){
 
 function render(){
   gid = 0;
-  renderMkts(); renderHero(); renderHeat();
+  renderMkts(); renderHero(); renderSig(); renderHeat();
   $('wlist').innerHTML = watch.length ? list(watch, true) : '<div class="empty">아직 관심종목이 없어요. 위 검색창에서 추가해 보세요.</div>';
   $('wcount').textContent = watch.length ? `${watch.length}개` : '';
   renderGroups();
@@ -526,6 +542,41 @@ async function loadRT(){
     rtOpen = qs.some(q => q.status==='OPEN');
     syms.forEach(applyRT); render();
   } catch { setRTFailed(true); }
+}
+
+// ---------- 경제 신호 ----------
+let macro = null;
+const signed = (v,d) => v==null ? '–' : (v>0?'+':v<0?'−':'')+fmt(Math.abs(v),d);
+function renderSig(){
+  const el = $('sig'); if (!el) return;
+  if (!macro) { el.innerHTML = [1,2,3].map(()=>'<div class="panel sc"><div class="skel" style="width:50%"></div><div class="skel" style="height:30px;width:40%"></div><div class="skel" style="height:40px"></div></div>').join(''); return; }
+  const t = x => x ? `<span class="live"><i></i>${timeStr(x)} 기준</span>` : '';
+  const sp = macro.spread || {}, k3 = macro.kr3 || {}, k10 = macro.kr10 || {}, fk = macro.kospi || {}, fq = macro.kosdaq || {};
+  const spChg = sp.value!=null && sp.prev!=null ? sp.value - sp.prev : null;
+  const card1 = sp.error ? `<div class="panel sc"><div class="lbl">미국 장단기 금리차</div><div class="err">데이터를 불러오지 못했어요</div></div>` : `
+    <div class="panel sc"><div class="lbl"><span>미국 장단기 금리차 (10년−2년)</span>${t(sp.time)}</div>
+      <div class="sbig num">${signed(sp.value,2)}%p <span class="pill ${sp.value<0?'up':'flat'}" style="${sp.value<0?'':'color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)'}">${sp.value<0?'역전':'정상'}</span></div>
+      <div class="rows num"><div><span>전일 대비</span><b class="${cls(spChg)}">${signed(spChg,2)}%p</b></div><div><span>10년물 / 2년물</span><b>${fmt(sp.us10,2)}% / ${fmt(sp.us2,2)}%</b></div></div>
+      <div class="note"><p><b>경기침체 신호</b> · 마이너스(장단기 금리 역전)가 되면 경기침체 우려가 커져요. 역전이 풀리며 다시 벌어질 때도 침체가 가까워진 신호로 봐요.</p></div></div>`;
+  const brow = (n,b) => b.error||b.value==null ? `<div><span>${n}</span><b>–</b></div>` : `<div><span>${n}</span><b class="num">${fmt(b.value,3)}% <span class="${cls(b.change)}" style="font-weight:600">${arrow(b.change)} ${fmt(Math.abs(b.change||0),3)}</span></b></div>`;
+  const card2 = `
+    <div class="panel sc"><div class="lbl"><span>한국 국고채 금리</span>${t(k3.time||k10.time)}</div>
+      <div class="sbig num">${k3.value!=null?fmt(k3.value,3)+'%':'–'} <small style="font-size:13px;color:var(--muted);font-weight:500">3년물</small></div>
+      <div class="rows">${brow('3년물',k3)}${brow('10년물',k10)}<div><span>10년−3년 차이</span><b class="num">${k3.value!=null&&k10.value!=null?signed(k10.value-k3.value,3)+'%p':'–'}</b></div></div>
+      <div class="note"><p><b>국내 금리 흐름</b> · 오르면 대출금리 상승과 채권 가격 하락 압력, 내리면 기준금리 인하 기대가 커지는 신호예요.</p></div></div>`;
+  const d = fk.date ? `${+fk.date.slice(4,6)}/${+fk.date.slice(6,8)}` : '';
+  const isToday = fk.date && fk.date === new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}).replace(/-/g,'');
+  const card3 = fk.error ? `<div class="panel sc"><div class="lbl">외국인 순매수</div><div class="err">데이터를 불러오지 못했어요</div></div>` : `
+    <div class="panel sc"><div class="lbl"><span>코스피 외국인 순매수</span>${d?`<span class="live ${isToday&&rtOpen?'on':''}"><i></i>${d} ${isToday&&rtOpen?'장중 누적':'기준'}</span>`:''}</div>
+      <div class="sbig num ${cls(fk.foreign)}">${signed(fk.foreign,0)}억원</div>
+      <div class="rows num"><div><span>코스피 개인 / 기관</span><b><span class="${cls(fk.personal)}">${signed(fk.personal,0)}</span> / <span class="${cls(fk.institutional)}">${signed(fk.institutional,0)}</span>억</b></div>
+      <div><span>코스닥 외국인</span><b class="${cls(fq.foreign)}">${signed(fq.foreign,0)}억원</b></div></div>
+      <div class="note"><p><b>국내 증시 수급 방향</b> · 외국인이 계속 사면 지수를 끌어올리는 힘, 계속 팔면 하락 압력으로 봐요.</p></div></div>`;
+  el.innerHTML = card1 + card2 + card3;
+}
+async function loadMacro(){
+  try { macro = await fetch('/api/macro').then(r=>r.json()); } catch { macro = {spread:{error:1},kr3:{error:1},kr10:{error:1},kospi:{error:1},kosdaq:{error:1}}; }
+  renderSig();
 }
 
 let loading = false;
@@ -736,7 +787,8 @@ function hookTip(svg, d, dg){
 }
 
 render(); load();
-setInterval(() => { if (!document.hidden) load(); }, 60000);
+setInterval(() => { if (!document.hidden) { load(); loadMacro(); } }, 60000);
+loadMacro();
 // 국내 시세는 네이버 증권에서 장중 10초마다 갱신 (Yahoo는 약 20분 지연)
 loadRT();
 setInterval(() => { if (!document.hidden && (rtOpen || Date.now()-rtLast > 60000)) loadRT(); }, 10000);
