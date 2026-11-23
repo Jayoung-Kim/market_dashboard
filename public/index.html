@@ -144,6 +144,13 @@ section:first-child{margin-top:4px}
 .sug div:hover,.sug div.on{background:var(--panel2)}
 .sug b{font-weight:650;font-size:13.5px}.sug em{font-style:normal;color:var(--text2);font-size:12.5px;margin-left:6px}.sug span{color:var(--muted);font-size:11.5px;white-space:nowrap}
 .hint{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.pop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 14px}
+.pop span{font-size:12px;color:var(--muted);margin-right:2px}
+.pop button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;color:var(--text2)}
+.pop button:hover{border-color:var(--accent);color:var(--accent)}
+.mkt{font-style:normal;font-size:11px;font-weight:650;padding:1px 6px;border-radius:5px}
+.mkt.ks{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.mkt.kq{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
 .hint code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
 .empty{color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--r);padding:26px;text-align:center}
 
@@ -203,12 +210,13 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
     <div class="tools">
       <div class="add">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="q" placeholder="종목명 또는 티커 검색 (AAPL, Tesla, 005930.KS)" autocomplete="off">
+        <input id="q" placeholder="삼성전자, 하이닉스, ㅅㅅㅈㅈ, 005930, AAPL…" autocomplete="off">
         <button class="btn" id="addBtn">추가</button>
         <div class="sug" id="sug"></div>
       </div>
     </div>
-    <p class="hint">한국 종목은 종목코드 뒤에 코스피 <code>.KS</code>, 코스닥 <code>.KQ</code>를 붙여요 (삼성전자 <code>005930.KS</code>). 목록은 각자의 브라우저에 저장돼요.</p>
+    <p class="hint">한국 종목은 한글 이름, 초성(ㅅㅅㅈㅈ), 6자리 종목코드로 찾을 수 있어요. 해외 종목은 티커나 영문 이름으로 검색하세요. 목록은 각자의 브라우저에 저장돼요.</p>
+    <div class="pop" id="pop"></div>
     <div id="wlist"></div>
   </section>
 
@@ -461,27 +469,85 @@ document.addEventListener('click', e => {
 
 // watchlist add + search
 let sugItems = [], sugIdx = -1, st;
+
+// ---- 한국 종목 검색 (한글 이름 · 초성 · 6자리 코드) ----
+const KR_ETF = [['069500','KODEX 200'],['122630','KODEX 레버리지'],['114800','KODEX 인버스'],['252670','KODEX 200선물인버스2X'],['233740','KODEX 코스닥150레버리지'],
+  ['091160','KODEX 반도체'],['132030','KODEX 골드선물(H)'],['379800','KODEX 미국S&P500TR'],['379810','KODEX 미국나스닥100TR'],['360750','TIGER 미국S&P500'],
+  ['133690','TIGER 미국나스닥100'],['381170','TIGER 미국테크TOP10 INDXX'],['458730','TIGER 미국배당다우존스'],['091230','TIGER 반도체'],['305540','TIGER 2차전지테마'],['360200','ACE 미국S&P500']];
+const POPULAR = [['005930','삼성전자','KS'],['000660','SK하이닉스','KS'],['373220','LG에너지솔루션','KS'],['005380','현대차','KS'],['035420','NAVER','KS'],['035720','카카오','KS'],['196170','알테오젠','KQ'],['247540','에코프로비엠','KQ']];
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const norm = s => s.toLowerCase().replace(/\s+/g,'');
+const chosung = s => [...s].map(ch => { const c=ch.charCodeAt(0)-0xAC00; return c>=0&&c<11172 ? CHO[Math.floor(c/588)] : ch; }).join('');
+let KR = null, krLoading = null;
+function loadKR(){
+  if (KR || krLoading) return krLoading;
+  krLoading = fetch('/krx.json').then(r=>r.json()).then(j => {
+    const etf = KR_ETF.map(([c,n])=>[c,n,'KS','ETF']);
+    const etfCodes = new Set(etf.map(e=>e[0]));
+    KR = [...etf, ...j.items.filter(r=>!etfCodes.has(r[0]))].map(([c,n,m,t]) => ({code:c, name:n, m, t:t||'주식', k:norm(n), ch:chosung(norm(n))}));
+  }).catch(()=>{ KR = []; });
+  return krLoading;
+}
+function searchKR(q){
+  if (!KR) return [];
+  const k = norm(q), isCho = /^[ㄱ-ㅎ]+$/.test(k), isCode = /^\d{1,6}$/.test(k);
+  const out = [];
+  for (const r of KR){
+    let score = -1;
+    if (isCode){ if (r.code.startsWith(k)) score = r.code===k ? 0 : 1; }
+    else if (isCho){ const i = r.ch.indexOf(k); if (i>=0) score = i===0 ? 1 : 3; }
+    else { const i = r.k.indexOf(k); if (i>=0) score = r.k===k ? 0 : i===0 ? 1 : 2; }
+    if (score>=0) out.push([score, r.name.length, r]);
+  }
+  out.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  return out.slice(0,8).map(([, , r]) => ({symbol:`${r.code}.${r.m}`, name:r.name, exchange: r.m==='KS'?'코스피':'코스닥', type:r.t, kr:true}));
+}
+const hasKo = s => /[ㄱ-ㅎ가-힣]/.test(s);
+
 function addSym(sym, name){
   sym = sym.trim().toUpperCase(); if(!sym) return;
+  if (/^\d{6}$/.test(sym)){ const r = searchKR(sym)[0]; if (r){ sym=r.symbol; name=r.name; } else sym += '.KS'; }
   if (!watch.some(w=>w[0]===sym)) { watch.push([sym, name||sym]); SS('dash.watch',watch); }
-  $('q').value=''; hideSug(); render(); load([sym]);
+  $('q').value=''; hideSug(); render(); renderPopular(); load([sym]);
 }
 function hideSug(){ $('sug').style.display='none'; sugItems=[]; sugIdx=-1; }
 function showSug(){
   if(!sugItems.length) return hideSug();
-  $('sug').innerHTML = sugItems.map((s,i)=>`<div data-i="${i}" class="${i===sugIdx?'on':''}"><div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(s.symbol)}</b><em>${esc(s.name)}</em></div><span>${esc(s.exchange||'')} · ${esc(s.type||'')}</span></div>`).join('');
+  $('sug').innerHTML = sugItems.map((s,i)=>`<div data-i="${i}" class="${i===sugIdx?'on':''}"><div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.kr?`<b>${esc(s.name)}</b><em>${esc(s.symbol.slice(0,6))}</em>`:`<b>${esc(s.symbol)}</b><em>${esc(s.name)}</em>`}</div><span>${s.kr?`<i class="mkt ${s.exchange==='코스피'?'ks':'kq'}">${esc(s.exchange)}</i>`:esc(s.exchange||'')}${s.type?' · '+esc(s.type):''}</span></div>`).join('');
   $('sug').style.display='block';
 }
-$('q').oninput = () => { clearTimeout(st); const v=$('q').value.trim(); if(!v) return hideSug();
-  st = setTimeout(async()=>{ try{ const r=await fetch('/api/search?q='+encodeURIComponent(v)).then(r=>r.json()); if($('q').value.trim()!==v) return; sugItems=r.results||[]; sugIdx=-1; showSug(); }catch{} }, 250); };
+async function runSearch(v){
+  await loadKR();
+  if ($('q').value.trim()!==v) return;
+  const local = searchKR(v);
+  sugItems = local; sugIdx = local.length ? 0 : -1; showSug();
+  if (hasKo(v) || /^\d{1,6}$/.test(v)) return; // 한글·숫자는 한국 목록만
+  try {
+    const r = await fetch('/api/search?q='+encodeURIComponent(v)).then(r=>r.json());
+    if ($('q').value.trim()!==v) return;
+    const seen = new Set(local.map(x=>x.symbol));
+    sugItems = [...local.slice(0,4), ...(r.results||[]).filter(x=>!seen.has(x.symbol))].slice(0,10);
+    if (sugIdx<0 && sugItems.length) sugIdx = 0;
+    showSug();
+  } catch {}
+}
+$('q').onfocus = () => loadKR();
+$('q').oninput = () => { clearTimeout(st); const v=$('q').value.trim(); if(!v) return hideSug(); st = setTimeout(()=>runSearch(v), hasKo(v)?60:220); };
 $('q').onkeydown = e => {
+  if (e.isComposing) return;
   if (e.key==='ArrowDown'){ sugIdx=Math.min(sugIdx+1,sugItems.length-1); showSug(); e.preventDefault(); }
   else if (e.key==='ArrowUp'){ sugIdx=Math.max(sugIdx-1,0); showSug(); e.preventDefault(); }
   else if (e.key==='Enter'){ const s=sugItems[sugIdx]; s?addSym(s.symbol,s.name):addSym($('q').value); }
   else if (e.key==='Escape') hideSug();
 };
 $('sug').onclick = e => { const d=e.target.closest('[data-i]'); if(d){ const s=sugItems[+d.dataset.i]; addSym(s.symbol,s.name);} };
-$('addBtn').onclick = () => addSym($('q').value);
+$('addBtn').onclick = () => { const s=sugItems[sugIdx]; s?addSym(s.symbol,s.name):addSym($('q').value); };
+function renderPopular(){
+  const left = POPULAR.filter(([c,,m]) => !watch.some(w=>w[0]===`${c}.${m}`));
+  $('pop').innerHTML = left.length ? `<span>빠른 추가</span>${left.map(([c,n,m])=>`<button data-add="${c}.${m}" data-name="${esc(n)}">+ ${esc(n)}</button>`).join('')}` : '';
+}
+$('pop').onclick = e => { const b=e.target.closest('[data-add]'); if(b) addSym(b.dataset.add, b.dataset.name); };
+renderPopular();
 document.addEventListener('click', e => { if(!e.target.closest('.add')) hideSug(); });
 
 // modal

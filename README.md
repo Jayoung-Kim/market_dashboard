@@ -13,6 +13,7 @@ public/index.html   화면 (정적 파일)
 api/batch.js        여러 종목의 시세와 차트 데이터 (Vercel 서버리스 함수)
 api/search.js       종목 검색
 lib/yahoo.js        Yahoo 호출과 짧은 캐시
+public/krx.json     한국 상장 종목 목록 (한글 이름 검색용)
 vercel.json         public 폴더를 사이트 루트로 지정
 ```
 브라우저가 Yahoo를 직접 호출하면 CORS 정책에 막히기 때문에, `/api` 함수가 대신 데이터를 받아 전달합니다. 응답은 Vercel CDN에 30초 캐시돼서 방문자가 많아도 Yahoo 호출이 크게 늘지 않아요.
@@ -20,6 +21,9 @@ vercel.json         public 폴더를 사이트 루트로 지정
 ## 배포
 1. Vercel에서 **Add New → Project**를 누르고 이 저장소를 Import 합니다.
 2. Framework Preset은 **Other** 그대로 두고 Deploy를 누릅니다. 환경 변수는 필요 없어요.
+
+## 한국 종목 검색
+관심종목 검색창에서 한글 이름(삼성전자), 일부 이름(하이닉스), 초성(ㅅㅅㅈㅈ), 6자리 코드(005930)로 찾을 수 있어요.
 
 ## 기본 종목 바꾸기
 `public/index.html`의 `GROUPS` 목록에서 `['티커','표시 이름']`을 추가하거나 지우면 됩니다. 한국 종목은 `005930.KS`(코스피), `247540.KQ`(코스닥) 형식이에요.
