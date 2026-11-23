@@ -243,7 +243,7 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
     <div id="groups"></div>
   </section>
 
-  <footer>데이터: Yahoo Finance · 미국 주식·ETF는 거의 실시간, 한국 시장 약 20분 · 선물 10~15분 지연될 수 있음<br>1분마다 자동 갱신 · 투자 판단의 근거로 사용하지 마세요</footer>
+  <footer>데이터: 국내 지수·종목은 네이버 증권(장중 10초마다 갱신), 그 밖의 시세와 차트는 Yahoo Finance · 해외 선물은 10~15분 지연될 수 있음<br>그 밖의 항목은 1분마다 자동 갱신 · 투자 판단의 근거로 사용하지 마세요</footer>
 </main>
 
 <div class="ov" id="ov"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
@@ -309,6 +309,7 @@ function periodChg(d){
 function isOpen(d){
   if (!d || d.error) return false;
   if (isCoin(d.symbol||'')) return true;
+  if (d.rt) return d.rtOpen;
   const now = Date.now()/1000;
   return !!(d.tradingStart && d.tradingEnd && now>=d.tradingStart && now<=d.tradingEnd && (now - (d.marketTime||0)) < 3600);
 }
@@ -322,7 +323,7 @@ function timeStr(t){
 function asOf(d){
   if (!d || d.error || !d.marketTime) return {open:false, text:''};
   const open = isOpen(d);
-  if (open) return {open, text: timeStr(d.marketTime)+' 기준'};
+  if (open) return {open, text: (d.rt ? new Date(d.marketTime*1000).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) : timeStr(d.marketTime))+' 기준'};
   let md = '';
   try { md = new Date(d.marketTime*1000).toLocaleDateString('ko-KR',{timeZone:d.tz||undefined, month:'numeric', day:'numeric'}).replace(/\.\s?/g,'/').replace(/\/$/,''); } catch {}
   return {open, text: md+' 종가'};
@@ -468,6 +469,32 @@ function render(){
 
 function allSymbols(){ return [...new Set([...GROUPS.flatMap(g=>g.items.map(i=>i[0])), ...watch.map(w=>w[0])])]; }
 
+// ---------- 국내 실시간 시세 ----------
+const rtCache = {}; let rtOpen = false, rtLast = 0;
+function krCode(sym){
+  const m = {'^KS11':'KOSPI','^KQ11':'KOSDAQ','^KS200':'KPI200'}[sym]; if (m) return m;
+  const r = /^([0-9A-Z]{6})\.(KS|KQ)$/.exec(sym); return r ? r[1] : null;
+}
+function applyRT(sym){
+  const c = krCode(sym), q = c && rtCache[c], d = data[sym];
+  if (!q || q.error || q.price==null || !d || d.error) return;
+  d.price = q.price; if (q.prevClose!=null) d.prevClose = Math.round(q.prevClose*100)/100;
+  if (q.high!=null) d.dayHigh = q.high; if (q.low!=null) d.dayLow = q.low;
+  d.marketTime = q.time || d.marketTime; d.rt = true; d.rtOpen = q.status==='OPEN';
+  if (d.ts && d.close && q.time && (!d.ts.length || q.time > d.ts[d.ts.length-1]) && d.rtOpen){ d.ts = [...d.ts, q.time]; d.close = [...d.close, q.price]; }
+  else if (d.close?.length && d.rtOpen){ d.close = [...d.close.slice(0,-1), q.price]; }
+}
+async function loadRT(){
+  const syms = allSymbols().filter(krCode);
+  if (!syms.length) return;
+  try {
+    const j = await fetch('/api/kr?codes='+encodeURIComponent([...new Set(syms.map(krCode))].join(','))).then(r=>r.json());
+    Object.assign(rtCache, j.data||{});
+    rtOpen = Object.values(j.data||{}).some(q => q.status==='OPEN'); rtLast = Date.now();
+    syms.forEach(applyRT); render();
+  } catch {}
+}
+
 let loading = false;
 async function load(syms){
   const partial = !!syms;
@@ -481,7 +508,7 @@ async function load(syms){
     const rg = range;
     const [day, per] = await Promise.all([get(syms,'1d'), rg==='1d' ? [] : get(syms, rg)]);
     let errs = 0;
-    day.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { data[k]=v; if (v.error) errs++; }));
+    day.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { data[k]=v; if (v.error) errs++; applyRT(k); }));
     if (rg===range) per.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { hist[k]=v; }));
     $('dot').className = errs===syms.length ? 'err' : 'ok';
     $('stat').textContent = '화면 갱신 ' + new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + (errs?` · ${errs}개 실패`:'');
@@ -553,7 +580,7 @@ function addSym(sym, name){
   sym = sym.trim().toUpperCase(); if(!sym) return;
   if (/^\d{6}$/.test(sym)){ const r = searchKR(sym)[0]; if (r){ sym=r.symbol; name=r.name; } else sym += '.KS'; }
   if (!watch.some(w=>w[0]===sym)) { watch.push([sym, name||sym]); SS('dash.watch',watch); }
-  $('q').value=''; hideSug(); render(); renderPopular(); load([sym]);
+  $('q').value=''; hideSug(); render(); renderPopular(); load([sym]).then(()=>{ if (krCode(sym)) loadRT(); });
 }
 function hideSug(){ $('sug').style.display='none'; sugItems=[]; sugIdx=-1; }
 function showSug(){
@@ -677,6 +704,9 @@ function hookTip(svg, d, dg){
 
 render(); load();
 setInterval(() => { if (!document.hidden) load(); }, 60000);
+// 국내 시세는 네이버 증권에서 장중 10초마다 갱신 (Yahoo는 약 20분 지연)
+loadRT();
+setInterval(() => { if (!document.hidden && (rtOpen || Date.now()-rtLast > 60000)) loadRT(); }, 10000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (!theme) applyTheme(); });
 </script>
