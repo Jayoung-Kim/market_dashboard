@@ -80,6 +80,12 @@ section:first-child{margin-top:4px}
 .live{font-size:11px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
 .live i{width:6px;height:6px;border-radius:50%;background:var(--flat)}
 .live.on{color:var(--ok)}.live.on i{background:var(--ok)}
+.basis{font-size:11px;color:var(--muted);font-weight:500;margin-right:2px}
+.rsel{display:inline-flex;align-items:center;gap:8px}
+.rsel > span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.krw{font-size:12px;color:var(--text2);margin-top:1px}
+.pchg{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px}
+.pchg b{font-weight:700}
 
 /* heatmap */
 .heat{padding:14px}
@@ -175,7 +181,8 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
 @media (max-width:1000px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.trow{grid-template-columns:minmax(130px,2fr) 1fr 1fr 100px 28px}.trow .c52{display:none}}
 @media (max-width:640px){
   .bar{padding:10px 16px;gap:8px}.brand{flex:1;order:0}.bar>.spacer,.mkts{display:none}.ibtn{order:1}
-  #ranges{order:2;width:100%;display:flex;overflow-x:auto}#ranges button{flex:1}.upd{order:3;width:100%;justify-content:flex-end;margin-top:-2px}
+.upd{order:3;width:100%;justify-content:flex-end;margin-top:-2px}
+  .rsel{width:100%}.rsel .seg{flex:1;display:flex;overflow-x:auto}.rsel .seg button{flex:1;padding:5px 6px}
   main{padding:14px 16px 48px}section{margin-top:28px}
   .hc{padding:14px 14px 0}.hc .px{font-size:22px}.hc svg{width:calc(100% + 28px);margin:8px -14px 0;height:52px}.hc .ch{font-size:12px;flex-wrap:wrap;gap:4px}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card{padding:12px}.card .px{font-size:18px}.card .ch{font-size:12px;flex-wrap:wrap}.rng{display:none}
@@ -191,7 +198,6 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
   <div class="mkts" id="mkts"></div>
   <div class="spacer"></div>
   <div class="upd"><i id="dot"></i><span id="stat">불러오는 중…</span></div>
-  <div class="seg" id="ranges"></div>
   <button class="ibtn" id="refresh" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
   <button class="ibtn" id="theme" title="테마 전환" aria-label="테마 전환"></button>
 </div></header>
@@ -214,6 +220,8 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
         <button class="btn" id="addBtn">추가</button>
         <div class="sug" id="sug"></div>
       </div>
+      <div class="spacer"></div>
+      <div class="rsel"><span>차트 기간</span><div class="seg rseg"></div></div>
     </div>
     <p class="hint">한국 종목은 한글 이름, 초성(ㅅㅅㅈㅈ), 6자리 종목코드로 찾을 수 있어요. 해외 종목은 티커나 영문 이름으로 검색하세요. 목록은 각자의 브라우저에 저장돼요.</p>
     <div class="pop" id="pop"></div>
@@ -221,10 +229,11 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
   </section>
 
   <section>
-    <div class="sh"><h2>전체 지표</h2></div>
+    <div class="sh"><h2>전체 지표</h2><small>가격·배지는 전일 대비, 추세 차트와 기간 등락은 선택한 차트 기간 기준</small></div>
     <div class="tools">
       <div class="seg" id="cats"></div>
       <div class="spacer"></div>
+      <div class="rsel"><span>차트 기간</span><div class="seg rseg"></div></div>
       <div class="seg" id="views"><button data-v="card">카드</button><button data-v="table">표</button></div>
     </div>
     <div id="groups"></div>
@@ -242,6 +251,7 @@ const GROUPS = [
   {id:'us', title:'해외 증시', items:[['^IXIC','나스닥 종합'],['^NDX','나스닥 100'],['^GSPC','S&P 500'],['^DJI','다우존스'],['^SOX','필라델피아 반도체'],['^N225','니케이 225'],['000001.SS','상해종합'],['^VIX','VIX 변동성']]},
   {id:'etf', title:'ETF', items:[['SPY','SPDR S&P 500'],['QQQ','Invesco QQQ'],['SOXX','iShares 반도체'],['TLT','미국채 20년+'],['GLD','SPDR 금'],['069500.KS','KODEX 200'],['360750.KS','TIGER 미국S&P500'],['133690.KS','TIGER 미국나스닥100']]},
   {id:'cmd', title:'원자재·금리', items:[['GC=F','금'],['SI=F','은'],['CL=F','WTI 원유'],['BZ=F','브렌트유'],['NG=F','천연가스'],['HG=F','구리'],['^TNX','미국 10년물 금리'],['DX-Y.NYB','달러 인덱스']]},
+  {id:'coin', title:'코인', items:[['BTC-USD','비트코인'],['ETH-USD','이더리움'],['XRP-USD','리플'],['SOL-USD','솔라나'],['BNB-USD','BNB'],['DOGE-USD','도지코인']]},
 ];
 const HERO = ['^KS11','^IXIC','^GSPC','KRW=X'];
 const RANGES = [['1d','1일'],['5d','5일'],['1mo','1개월'],['6mo','6개월'],['1y','1년'],['5y','5년']];
@@ -253,7 +263,8 @@ let view = LS('dash.view') || 'card';
 let cat = LS('dash.cat') || 'all';
 let theme = LS('dash.theme');
 let watch = LS('dash.watch') || [['NVDA','엔비디아'],['005930.KS','삼성전자'],['000660.KS','SK하이닉스']];
-const data = {};
+const data = {};   // 오늘(1일) 데이터: 가격, 전일 대비, 핵심 지표, 히트맵
+const hist = {};   // 선택한 차트 기간의 데이터 (1일이 아닐 때만)
 const labels = {};
 GROUPS.forEach(g => g.items.forEach(([s,n]) => labels[s]=n));
 
@@ -265,6 +276,9 @@ const cls = v => v>0?'up':v<0?'down':'flat';
 const arrow = v => v>0?'▲':v<0?'▼':'';
 const pct = (p, plus=true) => p==null||isNaN(p) ? '–' : (p>0&&plus?'+':'')+fmt(p,2)+'%';
 const rlabel = () => RANGES.find(r=>r[0]===range)[1];
+const isCoin = s => /-USD$|-KRW$/.test(s);
+const series = s => (range==='1d' ? data[s] : (hist[s] && !hist[s].error ? hist[s] : null));
+const basis = s => isCoin(s) ? '오전 9시 대비' : '전일 대비';
 
 // theme
 function applyTheme(){
@@ -289,27 +303,43 @@ function periodChg(d){
 }
 function isOpen(d){
   if (!d || d.error) return false;
+  if (isCoin(d.symbol||'')) return true;
   const now = Date.now()/1000;
   return !!(d.tradingStart && d.tradingEnd && now>=d.tradingStart && now<=d.tradingEnd && (now - (d.marketTime||0)) < 3600);
 }
-function timeStr(t, tz){
+function timeStr(t){
   if(!t) return '';
-  try { return new Date(t*1000).toLocaleString('ko-KR',{timeZone:tz||undefined, month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false}); }
-  catch { return new Date(t*1000).toLocaleString('ko-KR'); }
+  const d = new Date(t*1000), now = new Date();
+  const hm = d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
+  return d.toDateString()===now.toDateString() ? hm : `${d.getMonth()+1}/${d.getDate()} ${hm}`;
 }
+// 값마다 기준 시각: 장중이면 "13:24 기준", 장 끝났으면 "11/21 종가" (거래소 날짜)
+function asOf(d){
+  if (!d || d.error || !d.marketTime) return {open:false, text:''};
+  const open = isOpen(d);
+  if (open) return {open, text: timeStr(d.marketTime)+' 기준'};
+  let md = '';
+  try { md = new Date(d.marketTime*1000).toLocaleDateString('ko-KR',{timeZone:d.tz||undefined, month:'numeric', day:'numeric'}).replace(/\.\s?/g,'/').replace(/\/$/,''); } catch {}
+  return {open, text: md+' 종가'};
+}
+const asOfHTML = d => { const a = asOf(d); return a.text ? `<span class="live ${a.open?'on':''}" title="${a.open?'장중 · 이 시각 시세':'장마감 · 마지막 종가'}"><i></i>${a.text}</span>` : ''; };
 function nameOf(s){ return labels[s] || (watch.find(w=>w[0]===s)||[])[1] || data[s]?.name || s; }
+function krwHTML(sym, d){
+  const fx = data['KRW=X']?.price; if (!isCoin(sym) || !fx || d.currency!=='USD') return '';
+  const w = d.price*fx; return `<div class="krw num">≈ ${fmt(w, w>=100?0:2)}원</div>`;
+}
 
 let gid = 0;
-function spark(d, h=44, cssClass='spark'){
+function spark(d, h=44, cssClass='spark', oneDay=false){
   const c = d?.close||[]; const w = 240;
   if (c.length<2) return `<svg class="${cssClass}"></svg>`;
-  const base = range==='1d' ? d.prevClose : null;
+  const base = (oneDay||range==='1d') ? d.prevClose : null;
   let mn = Math.min(...c), mx = Math.max(...c);
   if (base!=null){ mn=Math.min(mn,base); mx=Math.max(mx,base); }
   const pad=3, sx = w/(c.length-1), sy = mx===mn?0:(h-pad*2)/(mx-mn);
   const pts = c.map((v,i)=>[i*sx, h-pad-(v-mn)*sy]);
   const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
-  const col = `var(--${cls(periodChg(d)??0)})`;
+  const col = `var(--${cls(base!=null ? (d.price-base) : (c[c.length-1]-c[0]))})`;
   const id = 'g'+(gid++);
   const by = base!=null ? (h-pad-(base-mn)*sy).toFixed(1) : null;
   return `<svg class="${cssClass}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
@@ -320,7 +350,7 @@ function spark(d, h=44, cssClass='spark'){
 function chgHTML(d, sym){
   const c = chg(d); if (!c) return '<span class="flat">–</span>';
   const dg = digits(sym, d.price);
-  return `<span class="pill ${cls(c.a)} num">${arrow(c.a)} ${pct(Math.abs(c.p),false)}</span><span class="${cls(c.a)} num">${c.a>0?'+':c.a<0?'−':''}${fmt(Math.abs(c.a),dg)}</span>`;
+  return `<span class="basis">${basis(sym)}</span><span class="pill ${cls(c.a)} num">${arrow(c.a)} ${pct(Math.abs(c.p),false)}</span><span class="${cls(c.a)} num">${c.a>0?'+':c.a<0?'−':''}${fmt(Math.abs(c.a),dg)}</span>`;
 }
 function rangeBar(d, dg){
   if (!d.high52 || !d.low52 || d.high52<=d.low52) return '';
@@ -336,10 +366,10 @@ function renderHero(){
     if (d.error) return `<div class="panel hc"><div class="lbl">${labels[s]}</div><div class="err" style="padding-bottom:16px">데이터를 불러오지 못했어요</div></div>`;
     const dg = digits(s,d.price), open = isOpen(d);
     return `<div class="panel hc" data-sym="${esc(s)}">
-      <div class="lbl"><span>${labels[s]}</span><span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'}</span></div>
+      <div class="lbl"><span>${labels[s]}</span>${asOfHTML(d)}</div>
       <div class="px num">${fmt(d.price,dg)}</div>
       <div class="ch">${chgHTML(d,s)}</div>
-      ${spark(d,70,'')}
+      ${spark(d,70,'',true)}
     </div>`;
   }).join('');
 }
@@ -353,7 +383,7 @@ function tileStyle(p){
 }
 function renderHeat(){
   $('heat').innerHTML = GROUPS.map(g => `<div class="hrow"><span>${g.title}</span><div class="tiles">${
-    g.items.map(([s,n]) => { const c = chg(data[s]); return `<div class="tile" data-sym="${esc(s)}" style="${tileStyle(c?.p)}" title="${esc(n)} ${pct(c?.p)}"><b>${esc(n)}</b><span class="num">${c?pct(c.p):'–'}</span></div>`; }).join('')
+    g.items.map(([s,n]) => { const c = chg(data[s]); return `<div class="tile" data-sym="${esc(s)}" style="${tileStyle(c?.p)}" title="${esc(n)} ${basis(s)} ${pct(c?.p)} · ${esc(asOf(data[s]).text)}"><b>${esc(n)}</b><span class="num">${c?pct(c.p):'–'}</span></div>`; }).join('')
   }</div></div>`).join('');
 }
 
@@ -363,14 +393,15 @@ function card(sym, name, removable){
   const x = removable ? `<button class="x" data-rm="${esc(sym)}" title="삭제" aria-label="삭제">×</button>` : '';
   if (!d) return `<div class="panel card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="skel" style="width:55%;height:24px"></div><div class="skel" style="height:44px"></div></div>`;
   if (d.error) return `<div class="panel card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="err">데이터를 불러오지 못했어요. 티커를 확인해 주세요.</div></div>`;
-  const dg = digits(sym, d.price), open = isOpen(d), pc = periodChg(d);
+  const dg = digits(sym, d.price), s2 = series(sym), pc = periodChg(s2);
   return `<div class="panel card" data-sym="${esc(sym)}">${x}
     <div class="top"><div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)}</div></div>
-    ${removable?'':`<span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'}</span>`}</div>
+    ${removable?'':asOfHTML(d)}</div>
     <div class="px num">${fmt(d.price,dg)}<span class="cur">${esc(d.currency||'')}</span></div>
+    ${krwHTML(sym,d)}
     <div class="ch">${chgHTML(d,sym)}</div>
-    ${spark(d)}
-    ${range!=='1d'?`<div class="sym num" style="margin-top:4px">${rlabel()} <b class="${cls(pc)}">${pct(pc)}</b></div>`:''}
+    ${s2?spark(s2):'<div class="skel" style="height:44px"></div>'}
+    <div class="pchg num"><span>${range==='1d'?'1일 추세':rlabel()+' 등락 <b class="'+cls(pc)+'">'+pct(pc)+'</b>'}</span>${removable?asOfHTML(d):''}</div>
     ${rangeBar(d,dg)}
   </div>`;
 }
@@ -382,15 +413,15 @@ function trow(sym, name, removable){
   let r52 = '';
   if (d.high52 && d.low52 && d.high52>d.low52){ const p=Math.max(0,Math.min(100,(d.price-d.low52)/(d.high52-d.low52)*100)); r52 = `<div class="rbar"><i style="left:${p}%"></i></div>`; }
   return `<div class="trow" data-sym="${esc(sym)}">
-    <div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)}</div></div>
+    <div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)} · ${esc(asOf(d).text)}</div></div>
     <div class="r num" style="font-weight:700">${fmt(d.price,dg)}</div>
     <div class="r num cabs ${cls(c?.a)}">${c?(c.a>0?'+':c.a<0?'−':'')+fmt(Math.abs(c.a),dg):'–'}</div>
-    <div class="csp">${spark(d,30)}</div>
+    <div class="csp">${series(sym)?spark(series(sym),30):''}</div>
     <div class="c52">${r52}</div>
     ${x}
   </div>`;
 }
-function tableHead(){ return `<div class="trow head"><div>종목</div><div class="r">현재가</div><div class="r cabs">전일 대비</div><div class="csp">추세 (${rlabel()})</div><div class="c52">52주 범위</div><span></span></div>`; }
+function tableHead(){ return `<div class="trow head"><div>종목</div><div class="r">현재가</div><div class="r cabs">전일 대비</div><div class="csp">추세 (차트 기간 ${rlabel()})</div><div class="c52">52주 범위</div><span></span></div>`; }
 function list(items, removable){
   if (view==='table') return `<div class="panel tbl">${tableHead()}${items.map(([s,n])=>trow2(s,n,removable)).join('')}</div>`;
   return `<div class="grid">${items.map(([s,n])=>card(s,n,removable)).join('')}</div>`;
@@ -413,7 +444,7 @@ function renderGroups(){
 
 function renderMkts(){
   const m = [['국내','^KS11'],['미국','^GSPC'],['원자재','CL=F']];
-  $('mkts').innerHTML = m.map(([l,s]) => { const d=data[s]; if(!d) return ''; const o=isOpen(d); return `<span class="mk ${o?'open':''}"><i></i>${l} ${o?'장중':'장마감'}</span>`; }).join('');
+  $('mkts').innerHTML = m.map(([l,s]) => { const d=data[s]; if(!d||d.error) return ''; const o=isOpen(d); return `<span class="mk ${o?'open':''}"><i></i>${l} ${o?'장중':'장마감'}</span>`; }).join('') + '<span class="mk open"><i></i>코인 24시간</span>';
 }
 
 function render(){
@@ -435,12 +466,15 @@ async function load(syms){
   if (!partial) loading = true;
   $('dot').className='load'; $('stat').textContent='갱신 중…';
   try {
-    const chunks = []; for (let i=0;i<syms.length;i+=12) chunks.push(syms.slice(i,i+12));
-    const res = await Promise.all(chunks.map(c => fetch(`/api/batch?range=${range}&symbols=${encodeURIComponent(c.join(','))}`).then(r=>r.json())));
+    const get = (list, rg) => { const chunks = []; for (let i=0;i<list.length;i+=12) chunks.push(list.slice(i,i+12));
+      return Promise.all(chunks.map(c => fetch(`/api/batch?range=${rg}&symbols=${encodeURIComponent(c.join(','))}`).then(r=>r.json()))); };
+    const rg = range;
+    const [day, per] = await Promise.all([get(syms,'1d'), rg==='1d' ? [] : get(syms, rg)]);
     let errs = 0;
-    res.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { data[k]=v; if (v.error) errs++; }));
+    day.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { data[k]=v; if (v.error) errs++; }));
+    if (rg===range) per.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { hist[k]=v; }));
     $('dot').className = errs===syms.length ? 'err' : 'ok';
-    $('stat').textContent = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' 갱신' + (errs?` · ${errs}개 실패`:'');
+    $('stat').textContent = '화면 갱신 ' + new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + (errs?` · ${errs}개 실패`:'');
   } catch(e) {
     $('dot').className='err'; $('stat').textContent='데이터 서버 연결 실패';
   }
@@ -453,8 +487,9 @@ function seg(el, items, cur, onPick){
   el.innerHTML = items.map(([k,l])=>`<button data-k="${k}" class="${k===cur?'on':''}">${l}</button>`).join('');
   el.onclick = e => { const b=e.target.closest('button'); if(!b) return; [...el.children].forEach(x=>x.classList.toggle('on',x===b)); onPick(b.dataset.k); };
 }
-function setRange(r){ if (r===range) return; range=r; SS('dash.range',r); seg($('ranges'), RANGES, range, setRange); Object.keys(data).forEach(k=>delete data[k]); render(); load(); }
-seg($('ranges'), RANGES, range, setRange);
+function drawRangeSegs(){ document.querySelectorAll('.rseg').forEach(el => seg(el, RANGES, range, setRange)); }
+function setRange(r){ if (r===range) return; range=r; SS('dash.range',r); drawRangeSegs(); Object.keys(hist).forEach(k=>delete hist[k]); render(); load(); }
+drawRangeSegs();
 seg($('cats'), [['all','전체'],...GROUPS.map(g=>[g.id,g.title])], cat, k => { cat=k; SS('dash.cat',k); renderGroups(); });
 seg($('views'), [['card','카드'],['table','표']], view, k => { view=k; SS('dash.view',k); render(); });
 $('refresh').onclick = () => load();
@@ -559,27 +594,27 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); }
 
 function renderModal(){
   const s=openSym, d=data[s]; if(!d) return;
-  const dg=digits(s,d.price), pc=periodChg(d), open=isOpen(d);
+  const dg=digits(s,d.price), sd=series(s), pc=periodChg(sd);
   $('modal').innerHTML = `
    <div class="mh"><div class="t"><div class="nm">${esc(nameOf(s))}</div><div class="sym">${esc(s)} · ${esc(d.name||'')} · ${esc(d.exchange||'')}</div></div>
-   <div class="seg" id="mr"></div>
+   <div class="rsel"><span>차트 기간</span><div class="seg" id="mr"></div></div>
    <button class="ibtn" id="mclose" aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
    ${d.error?'<div class="err">데이터를 불러오지 못했어요</div>':`
    <div class="mp"><span class="px num">${fmt(d.price,dg)}<span class="cur" style="font-size:13px">${esc(d.currency||'')}</span></span>
    <span class="ch" style="display:flex;gap:6px;align-items:center;font-weight:600">${chgHTML(d,s)}</span>
-   <span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'} · ${timeStr(d.marketTime,d.tz)} 기준</span></div>
-   <div style="position:relative">${bigChart(d)}</div>
+   ${asOfHTML(d)}</div>${krwHTML(s,d)}
+   <div style="position:relative">${sd?bigChart(sd):'<div class="skel" style="height:300px;margin-top:14px"></div>'}</div>
    <div class="stats num">
-     <div><small>전일 종가</small><b>${fmt(d.prevClose,dg)}</b></div>
+     <div><small>${isCoin(s)?'오전 9시 가격':'전일 종가'}</small><b>${fmt(d.prevClose,dg)}</b></div>
      <div><small>당일 고가 / 저가</small><b>${fmt(d.dayHigh,dg)} / ${fmt(d.dayLow,dg)}</b></div>
-     <div><small>기간 등락 (${rlabel()})</small><b class="${cls(pc)}">${pct(pc)}</b></div>
+     <div><small>${rlabel()} 등락</small><b class="${cls(pc)}">${pct(pc)}</b></div>
      <div><small>52주 최고</small><b>${fmt(d.high52,dg)}</b></div>
      <div><small>52주 최저</small><b>${fmt(d.low52,dg)}</b></div>
      <div><small>52주 고점 대비</small><b class="${cls(d.high52?d.price/d.high52-1:0)}">${d.high52?pct((d.price/d.high52-1)*100):'–'}</b></div>
    </div>`}`;
   seg($('mr'), RANGES, range, setRange);
   $('mclose').onclick = closeModal;
-  const svg = $('modal').querySelector('svg.big'); if (svg) hookTip(svg, d, dg);
+  const svg = $('modal').querySelector('svg.big'); if (svg) hookTip(svg, sd, dg);
 }
 
 const CH = {W:940,H:340,L:8,R:72,T:14,B:28};
@@ -598,7 +633,7 @@ function bigChart(d){
   let grid=''; for(let k=0;k<=4;k++){ const v=mn+(mx-mn)*k/4, yy=y(v).toFixed(1);
     grid+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)" vector-effect="non-scaling-stroke"/><text x="${W-R+8}" y="${+yy+4}" font-size="11" fill="var(--muted)">${fmt(v,dg)}</text>`; }
   let xl=''; const n=5; for(let k=0;k<n;k++){ const i=Math.round(k*(c.length-1)/(n-1)); xl+=`<text x="${x(i)}" y="${H-8}" font-size="11" fill="var(--muted)" text-anchor="${k===0?'start':k===n-1?'end':'middle'}">${axisLabel(d.ts[i],d.tz)}</text>`; }
-  const bl = base!=null?`<line x1="${L}" x2="${W-R}" y1="${y(base)}" y2="${y(base)}" stroke="var(--muted)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/><text x="${L+4}" y="${y(base)-5}" font-size="11" fill="var(--muted)">전일 종가 ${fmt(base,dg)}</text>`:'';
+  const bl = base!=null?`<line x1="${L}" x2="${W-R}" y1="${y(base)}" y2="${y(base)}" stroke="var(--muted)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/><text x="${L+4}" y="${y(base)-5}" font-size="11" fill="var(--muted)">${isCoin(d.symbol||'')?'오전 9시':'전일 종가'} ${fmt(base,dg)}</text>`:'';
   const lx=x(c.length-1), ly=y(c[c.length-1]);
   return `<svg class="big" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
    <defs><linearGradient id="bg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
