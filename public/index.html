@@ -330,7 +330,12 @@ function asOf(d){
 const asOfHTML = d => { const a = asOf(d); return a.text ? `<span class="live ${a.open?'on':''}" title="${a.open?'장중 · 이 시각 시세':'장마감 · 마지막 종가'}"><i></i>${a.text}</span>` : ''; };
 function nameOf(s){ return labels[s] || (watch.find(w=>w[0]===s)||[])[1] || data[s]?.name || s; }
 function krwHTML(sym, d){
-  const fx = data['KRW=X']?.price; if (!isCoin(sym) || !fx || d.currency!=='USD') return '';
+  const fx = data['KRW=X']?.price; if (!fx || d.currency!=='USD' || d.price==null) return '';
+  if (sym==='GC=F' || sym==='SI=F'){ // 국제시세(달러/트로이온스) → 원/g, 원/돈(3.75g)
+    const g = d.price*fx/31.1034768;
+    return `<div class="krw num" title="국제 선물시세 × 원/달러 환율로 계산한 값이에요. 국내 금시장·금은방 가격과는 차이가 있어요.">1돈 ${fmt(g*3.75,0)}원 · 1g ${fmt(g,0)}원 <span class="basis">국제시세 환산</span></div>`;
+  }
+  if (!isCoin(sym)) return '';
   const w = d.price*fx; return `<div class="krw num">≈ ${fmt(w, w>=100?0:2)}원</div>`;
 }
 
