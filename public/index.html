@@ -2,127 +2,248 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>시황 대시보드</title>
+<meta name="description" content="코스피·나스닥·ETF·금/은·유가·환율 시황을 한눈에 보는 대시보드">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%233b5bdb'/><path d='M6 22l6-7 5 4 9-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
-  --bg:#f5f6f8;--panel:#ffffff;--panel2:#f0f2f5;--line:#e3e6eb;--text:#151a22;--muted:#6b7380;
-  --up:#d6293e;--down:#1f6fd6;--flat:#7c8591;--accent:#3b5bdb;--shadow:0 1px 2px rgba(16,24,40,.06);
+  --bg:#f3f4f7;--panel:#ffffff;--panel2:#f1f3f6;--panel3:#e8ebf0;--line:#e4e7ec;--text:#11151c;--text2:#3a414d;--muted:#7a8291;
+  --up:#e5373f;--down:#2f6fe4;--flat:#8a919c;--accent:#3b5bdb;--ok:#14a867;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);--shadow-lg:0 20px 50px rgba(16,24,40,.18);
+  --r:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#0a0d13;--panel:#131821;--panel2:#1a202b;--panel3:#232a37;--line:#232a36;--text:#eef1f6;--text2:#c3c9d4;--muted:#7f8898;
+  --up:#ff5a63;--down:#4f8dff;--flat:#7f8898;--accent:#7c93ff;--ok:#2fd08a;--shadow:none;--shadow-lg:0 20px 60px rgba(0,0,0,.6);
 }
 @media (prefers-color-scheme:dark){
-  :root{--bg:#0e1116;--panel:#161a21;--panel2:#1d222b;--line:#2a303b;--text:#e8ebf0;--muted:#8a93a2;
-  --up:#ff5468;--down:#4c95ff;--flat:#8a93a2;--accent:#7c95ff;--shadow:none}
+  :root:not([data-theme="light"]){
+    --bg:#0a0d13;--panel:#131821;--panel2:#1a202b;--panel3:#232a37;--line:#232a36;--text:#eef1f6;--text2:#c3c9d4;--muted:#7f8898;
+    --up:#ff5a63;--down:#4f8dff;--flat:#7f8898;--accent:#7c93ff;--ok:#2fd08a;--shadow:none;--shadow-lg:0 20px 60px rgba(0,0,0,.6);
+  }
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.bar{max-width:1400px;margin:0 auto;padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
-.status{color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--flat)}
-.dot.ok{background:#22b573}.dot.err{background:var(--up)}.dot.load{background:#f2a516;animation:p 1s infinite}
-@keyframes p{50%{opacity:.3}}
-.spacer{flex:1}
-.seg{display:inline-flex;background:var(--panel2);border-radius:8px;padding:3px;gap:2px}
-.seg button{border:0;background:transparent;color:var(--muted);padding:5px 11px;border-radius:6px;font:inherit;font-size:13px;cursor:pointer}
-.seg button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow);font-weight:600}
-.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:6px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}
-.btn:hover{border-color:var(--accent)}
-main{max-width:1400px;margin:0 auto;padding:16px 20px 60px}
-section{margin-top:22px}
-.sh{display:flex;align-items:baseline;gap:10px;margin:0 0 10px}
-.sh h2{font-size:15px;margin:0;font-weight:700}
-.sh small{color:var(--muted);font-size:12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;box-shadow:var(--shadow);cursor:pointer;position:relative;transition:border-color .15s}
-.card:hover{border-color:var(--accent)}
-.card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.nm{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sym{color:var(--muted);font-size:11.5px}
-.tag{font-size:10.5px;padding:1px 6px;border-radius:10px;background:var(--panel2);color:var(--muted);white-space:nowrap}
-.tag.live{color:#22b573;background:color-mix(in srgb,#22b573 14%,transparent)}
-.px{font-size:21px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.px .cur{font-size:11px;color:var(--muted);font-weight:500;margin-left:4px}
-.chg{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+button{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}
-.spark{display:block;width:100%;height:46px;margin-top:6px}
-.foot{display:flex;justify-content:space-between;color:var(--muted);font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums}
-.x{position:absolute;top:6px;right:6px;border:0;background:var(--panel2);color:var(--muted);width:22px;height:22px;border-radius:6px;cursor:pointer;display:none;font-size:14px;line-height:1}
-.card:hover .x{display:block}
-.err{color:var(--muted);font-size:12px;margin-top:10px}
-.skel{height:20px;margin-top:8px;border-radius:6px;background:var(--panel2)}
-.add{display:flex;gap:8px;position:relative;flex-wrap:wrap}
-.add input{flex:1;min-width:200px;max-width:380px;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:8px;font:inherit}
-.add input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);border-color:var(--accent)}
-.sug{position:absolute;top:40px;left:0;width:min(460px,100%);background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:4;overflow:hidden;display:none}
-.sug div{padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+
+/* header */
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--line)}
+.bar{max-width:1320px;margin:0 auto;padding:12px 24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center}
+h1{font-size:17px;margin:0;font-weight:750;letter-spacing:-.02em}
+.mkts{display:flex;gap:6px;flex-wrap:wrap}
+.mk{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);background:var(--panel);border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+.mk i{width:7px;height:7px;border-radius:50%;background:var(--flat)}
+.mk.open i{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.spacer{flex:1}
+.upd{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.upd i{width:6px;height:6px;border-radius:50%;background:var(--flat)}
+.upd i.ok{background:var(--ok)}.upd i.err{background:var(--up)}.upd i.load{background:#f2a516;animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+.ibtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:grid;place-items:center;color:var(--text2)}
+.ibtn:hover{border-color:var(--accent);color:var(--accent)}
+.ibtn svg{width:16px;height:16px}
+.seg{display:inline-flex;background:var(--panel2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--muted);padding:5px 11px;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow);font-weight:650}
+:root[data-theme="dark"] .seg button.on{background:var(--panel3)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button.on{background:var(--panel3)}}
+
+main{max-width:1320px;margin:0 auto;padding:20px 24px 64px}
+section{margin-top:34px}
+section:first-child{margin-top:4px}
+.sh{display:flex;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+.sh h2{font-size:17px;margin:0;font-weight:750;letter-spacing:-.02em}
+.sh small{color:var(--muted);font-size:12.5px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.hc{padding:16px 18px 0;cursor:pointer;overflow:hidden;position:relative;transition:transform .15s,border-color .15s}
+.hc:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));transform:translateY(-1px)}
+.hc .lbl{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:650;color:var(--text2)}
+.hc .px{font-size:28px;font-weight:750;letter-spacing:-.03em;margin-top:6px}
+.hc .ch{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:13.5px;font-weight:600}
+.hc svg{display:block;width:calc(100% + 36px);margin:10px -18px 0;height:70px}
+
+.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:7px;font-size:12.5px;font-weight:700}
+.pill.up{background:color-mix(in srgb,var(--up) 13%,transparent)}
+.pill.down{background:color-mix(in srgb,var(--down) 13%,transparent)}
+.pill.flat{background:var(--panel2)}
+.live{font-size:11px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--flat)}
+.live.on{color:var(--ok)}.live.on i{background:var(--ok)}
+
+/* heatmap */
+.heat{padding:14px}
+.hrow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:start}
+.hrow + .hrow{margin-top:8px}
+.hrow > span{font-size:12px;color:var(--muted);font-weight:600;padding-top:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px}
+.tile{min-width:0;border-radius:10px;padding:9px 11px;cursor:pointer;min-height:56px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .12s,filter .12s;border:1px solid transparent}
+.tile:hover{transform:scale(1.03);filter:brightness(1.05)}
+.tile b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{font-size:15px;font-weight:750;letter-spacing:-.02em}
+.legend{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);margin-left:auto}
+.legend .grad{width:120px;height:8px;border-radius:4px}
+
+/* toolbar */
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.tools .spacer{flex:1}
+#cats{overflow-x:auto;max-width:100%}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{padding:14px 16px 12px;cursor:pointer;position:relative;transition:border-color .15s,transform .15s}
+.card:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));transform:translateY(-1px)}
+.card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.nm{font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sym{color:var(--muted);font-size:11.5px;margin-top:1px}
+.card .px{font-size:22px;font-weight:750;margin-top:10px;letter-spacing:-.03em}
+.cur{font-size:11px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
+.card .ch{display:flex;gap:6px;align-items:center;margin-top:3px;font-size:13px;font-weight:600}
+.spark{display:block;width:100%;height:44px;margin-top:10px}
+.rng{margin-top:10px}
+.rng .t{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.rbar{position:relative;height:4px;border-radius:2px;background:var(--panel3);margin-top:4px}
+.rbar i{position:absolute;top:50%;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2.5px solid var(--text2);transform:translate(-50%,-50%)}
+.x{position:absolute;top:8px;right:8px;border:0;background:var(--panel2);color:var(--muted);width:24px;height:24px;border-radius:7px;cursor:pointer;opacity:0;transition:opacity .15s;font-size:15px;line-height:1}
+.card:hover .x,.trow:hover .x{opacity:1}
+.x:hover{color:var(--up)}
+@media (hover:none){.x{opacity:1}}
+.err{color:var(--muted);font-size:12.5px;margin-top:12px}
+.skel{height:18px;margin-top:10px;border-radius:6px;background:linear-gradient(90deg,var(--panel2),var(--panel3),var(--panel2));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+
+/* table */
+.tbl{overflow:hidden}
+.trow{display:grid;grid-template-columns:minmax(150px,2fr) 1.1fr 1fr 120px 1.3fr 28px;gap:14px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);cursor:pointer;position:relative}
+.trow:hover{background:var(--panel2)}
+.trow.head{cursor:default;font-size:12px;color:var(--muted);font-weight:600;border-top:0;background:transparent;padding-top:12px;padding-bottom:8px}
+.trow .r{text-align:right}
+.trow .spark{height:30px;margin:0}
+.trow .x{position:static}
+.tgroup{padding:10px 16px 6px;font-size:12px;font-weight:700;color:var(--muted);border-top:1px solid var(--line);background:var(--panel2)}
+
+/* watchlist */
+.add{display:flex;gap:8px;position:relative;flex:1;max-width:480px;min-width:240px}
+.add input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 12px 9px 36px;border-radius:10px;font:inherit;font-size:13.5px}
+.add .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.add input:focus{outline:3px solid color-mix(in srgb,var(--accent) 25%,transparent);border-color:var(--accent)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;padding:0 16px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.sug{position:absolute;top:44px;left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);z-index:6;overflow:hidden;display:none}
+.sug div{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .sug div:hover,.sug div.on{background:var(--panel2)}
-.sug b{font-weight:600}.sug span{color:var(--muted);font-size:12px}
-.hint{color:var(--muted);font-size:12px;margin:6px 0 10px}
-.empty{color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center}
-/* summary strip */
-.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
-.pill{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:12.5px;display:flex;gap:8px;align-items:baseline;cursor:pointer}
-.pill b{font-weight:600}
+.sug b{font-weight:650;font-size:13.5px}.sug em{font-style:normal;color:var(--text2);font-size:12.5px;margin-left:6px}.sug span{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.hint{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.hint code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
+.empty{color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--r);padding:26px;text-align:center}
+
 /* modal */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
-.ov.on{display:flex}
-.modal{background:var(--panel);border-radius:14px;width:min(980px,100%);max-height:94vh;overflow:auto;padding:18px 20px}
+.ov{position:fixed;inset:0;background:rgba(5,8,14,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+.ov.on{display:flex;animation:fi .15s}
+@keyframes fi{from{opacity:0}}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:min(1000px,100%);max-height:94vh;overflow:auto;padding:22px 24px;box-shadow:var(--shadow-lg)}
 .mh{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
-.mh .px{margin:0;font-size:28px}
-.big{width:100%;height:340px;display:block;margin-top:12px}
-.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
-.stats div{background:var(--panel2);border-radius:8px;padding:8px 10px}
-.stats small{display:block;color:var(--muted);font-size:11.5px}
-.stats b{font-variant-numeric:tabular-nums}
-.tip{position:fixed;z-index:20;pointer-events:none;background:var(--text);color:var(--bg);font-size:12px;padding:4px 8px;border-radius:6px;white-space:nowrap;display:none}
-.src{color:var(--muted);font-size:11.5px;margin-top:30px;text-align:center}
-@media (max-width:600px){.bar{padding:10px 16px}main{padding:12px 16px 40px}.grid{grid-template-columns:1fr 1fr}.px{font-size:18px}.big{height:240px}}
+.mh .t{flex:1;min-width:200px}
+.mh .t .nm{font-size:20px;font-weight:750}
+.mp{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:12px}
+.mp .px{font-size:34px;font-weight:800;letter-spacing:-.03em}
+.big{width:100%;height:340px;display:block;margin-top:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:14px}
+.stats div{background:var(--panel2);border-radius:10px;padding:10px 12px}
+.stats small{display:block;color:var(--muted);font-size:11.5px;margin-bottom:2px}
+.stats b{font-size:14.5px;font-weight:700}
+.tip{position:fixed;z-index:40;pointer-events:none;background:var(--text);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:8px;white-space:nowrap;display:none;box-shadow:var(--shadow-lg)}
+footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-height:1.7}
+
+@media (max-width:1000px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.trow{grid-template-columns:minmax(130px,2fr) 1fr 1fr 100px 28px}.trow .c52{display:none}}
+@media (max-width:640px){
+  .bar{padding:10px 16px;gap:8px}.brand{flex:1;order:0}.bar>.spacer,.mkts{display:none}.ibtn{order:1}
+  #ranges{order:2;width:100%;display:flex;overflow-x:auto}#ranges button{flex:1}.upd{order:3;width:100%;justify-content:flex-end;margin-top:-2px}
+  main{padding:14px 16px 48px}section{margin-top:28px}
+  .hc{padding:14px 14px 0}.hc .px{font-size:22px}.hc svg{width:calc(100% + 28px);margin:8px -14px 0;height:52px}.hc .ch{font-size:12px;flex-wrap:wrap;gap:4px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card{padding:12px}.card .px{font-size:18px}.card .ch{font-size:12px;flex-wrap:wrap}.rng{display:none}
+  .hrow{grid-template-columns:minmax(0,1fr)}.hrow > span{padding-top:0}.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.tile span{font-size:14px}
+  .trow{grid-template-columns:1fr auto 70px 24px;gap:10px;padding:10px 12px}.trow .cabs,.trow .csp{display:none}
+  .legend{display:none}.big{height:230px}.modal{padding:16px}.mp .px{font-size:26px}
+}
 </style>
 </head>
 <body>
 <header><div class="bar">
-  <h1>📈 시황 대시보드</h1>
-  <div class="status"><span class="dot" id="dot"></span><span id="stat">불러오는 중…</span></div>
+  <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 32 32"><path d="M5 23l7-8 5 4 10-11" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1>시황 대시보드</h1></div>
+  <div class="mkts" id="mkts"></div>
   <div class="spacer"></div>
+  <div class="upd"><i id="dot"></i><span id="stat">불러오는 중…</span></div>
   <div class="seg" id="ranges"></div>
-  <button class="btn" id="refresh" title="지금 새로고침">↻ 새로고침</button>
+  <button class="ibtn" id="refresh" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+  <button class="ibtn" id="theme" title="테마 전환" aria-label="테마 전환"></button>
 </div></header>
 
 <main>
-  <div class="strip" id="strip"></div>
-  <div id="groups"></div>
+  <section><div class="hero" id="hero"></div></section>
 
-  <section id="watch">
-    <div class="sh"><h2>⭐ 내 관심종목</h2><small id="wcount"></small></div>
-    <div class="add">
-      <input id="q" placeholder="종목명 또는 티커 검색 (예: AAPL, Tesla, 005930.KS)" autocomplete="off">
-      <button class="btn" id="addBtn">추가</button>
-      <div class="sug" id="sug"></div>
-    </div>
-    <div class="hint">한국 종목은 종목코드 뒤에 코스피 <b>.KS</b> / 코스닥 <b>.KQ</b>를 붙여요 (삼성전자 005930.KS, 에코프로비엠 247540.KQ). 목록은 각자의 브라우저에 저장돼요.</div>
-    <div class="grid" id="wgrid"></div>
+  <section>
+    <div class="sh"><h2>오늘의 등락률</h2><small>전일 종가 대비 · 타일을 누르면 상세 차트</small>
+      <div class="legend"><span>−3%</span><div class="grad" style="background:linear-gradient(90deg,var(--down),var(--panel3),var(--up))"></div><span>+3%</span></div></div>
+    <div class="panel heat" id="heat"></div>
   </section>
 
-  <div class="src">데이터: Yahoo Finance (비공식 API) · 한국 시장 약 20분, 선물 10~15분 지연될 수 있음 · 1분마다 자동 갱신 · 투자 판단의 근거로 사용하지 마세요</div>
+  <section id="watch">
+    <div class="sh"><h2>내 관심종목</h2><small id="wcount"></small></div>
+    <div class="tools">
+      <div class="add">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" placeholder="종목명 또는 티커 검색 (AAPL, Tesla, 005930.KS)" autocomplete="off">
+        <button class="btn" id="addBtn">추가</button>
+        <div class="sug" id="sug"></div>
+      </div>
+    </div>
+    <p class="hint">한국 종목은 종목코드 뒤에 코스피 <code>.KS</code>, 코스닥 <code>.KQ</code>를 붙여요 (삼성전자 <code>005930.KS</code>). 목록은 각자의 브라우저에 저장돼요.</p>
+    <div id="wlist"></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>전체 지표</h2></div>
+    <div class="tools">
+      <div class="seg" id="cats"></div>
+      <div class="spacer"></div>
+      <div class="seg" id="views"><button data-v="card">카드</button><button data-v="table">표</button></div>
+    </div>
+    <div id="groups"></div>
+  </section>
+
+  <footer>데이터: Yahoo Finance · 미국 주식·ETF는 거의 실시간, 한국 시장 약 20분 · 선물 10~15분 지연될 수 있음<br>1분마다 자동 갱신 · 투자 판단의 근거로 사용하지 마세요</footer>
 </main>
 
-<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="ov" id="ov"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
 <div class="tip" id="tip"></div>
 
 <script>
 const GROUPS = [
-  {id:'kr', title:'국내 증시·환율', items:[['^KS11','코스피'],['^KQ11','코스닥'],['^KS200','코스피 200'],['KRW=X','원/달러 환율']]},
+  {id:'kr', title:'국내', items:[['^KS11','코스피'],['^KQ11','코스닥'],['^KS200','코스피 200'],['KRW=X','원/달러 환율']]},
   {id:'us', title:'해외 증시', items:[['^IXIC','나스닥 종합'],['^NDX','나스닥 100'],['^GSPC','S&P 500'],['^DJI','다우존스'],['^SOX','필라델피아 반도체'],['^N225','니케이 225'],['000001.SS','상해종합'],['^VIX','VIX 변동성']]},
-  {id:'etf', title:'주요 ETF', items:[['SPY','SPDR S&P 500'],['QQQ','Invesco QQQ'],['SOXX','iShares 반도체'],['TLT','미국채 20년+'],['GLD','SPDR 금'],['069500.KS','KODEX 200'],['360750.KS','TIGER 미국S&P500'],['133690.KS','TIGER 미국나스닥100']]},
-  {id:'cmd', title:'원자재·금리·달러', items:[['GC=F','금 (온스)'],['SI=F','은 (온스)'],['CL=F','WTI 원유'],['BZ=F','브렌트유'],['NG=F','천연가스'],['HG=F','구리'],['^TNX','미국 10년물 금리'],['DX-Y.NYB','달러 인덱스']]},
+  {id:'etf', title:'ETF', items:[['SPY','SPDR S&P 500'],['QQQ','Invesco QQQ'],['SOXX','iShares 반도체'],['TLT','미국채 20년+'],['GLD','SPDR 금'],['069500.KS','KODEX 200'],['360750.KS','TIGER 미국S&P500'],['133690.KS','TIGER 미국나스닥100']]},
+  {id:'cmd', title:'원자재·금리', items:[['GC=F','금'],['SI=F','은'],['CL=F','WTI 원유'],['BZ=F','브렌트유'],['NG=F','천연가스'],['HG=F','구리'],['^TNX','미국 10년물 금리'],['DX-Y.NYB','달러 인덱스']]},
 ];
-const STRIP = ['^KS11','^IXIC','^GSPC','KRW=X','GC=F','CL=F'];
+const HERO = ['^KS11','^IXIC','^GSPC','KRW=X'];
 const RANGES = [['1d','1일'],['5d','5일'],['1mo','1개월'],['6mo','6개월'],['1y','1년'],['5y','5년']];
 const LS = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const SS = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 let range = LS('dash.range') || '1d';
+let view = LS('dash.view') || 'card';
+let cat = LS('dash.cat') || 'all';
+let theme = LS('dash.theme');
 let watch = LS('dash.watch') || [['NVDA','엔비디아'],['005930.KS','삼성전자'],['000660.KS','SK하이닉스']];
 const data = {};
 const labels = {};
@@ -131,67 +252,168 @@ GROUPS.forEach(g => g.items.forEach(([s,n]) => labels[s]=n));
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt = (v, d) => v==null||isNaN(v) ? '–' : v.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
-const digits = (s, v) => (s==='KRW=X'||s.endsWith('.KS')||s.endsWith('.KQ')) && v>=1000 ? (s==='KRW=X'?2:0) : (v>=1000?2: v>=10?2:3);
+const digits = (s, v) => s==='KRW=X' ? 2 : (s.endsWith('.KS')||s.endsWith('.KQ')) && v>=1000 ? 0 : (v>=10?2:3);
 const cls = v => v>0?'up':v<0?'down':'flat';
-const sign = v => v>0?'▲':v<0?'▼':'';
+const arrow = v => v>0?'▲':v<0?'▼':'';
+const pct = (p, plus=true) => p==null||isNaN(p) ? '–' : (p>0&&plus?'+':'')+fmt(p,2)+'%';
+const rlabel = () => RANGES.find(r=>r[0]===range)[1];
+
+// theme
+function applyTheme(){
+  if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme;
+  const dark = theme ? theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  $('theme').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+}
+$('theme').onclick = () => { const dark = theme ? theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; theme = dark?'light':'dark'; SS('dash.theme',theme); applyTheme(); };
+applyTheme();
 
 function chg(d){
-  if (!d || d.price==null || d.prevClose==null) return null;
+  if (!d || d.error || d.price==null || d.prevClose==null) return null;
   const a = d.price - d.prevClose; return {a, p: a/d.prevClose*100};
 }
 function periodChg(d){
+  if (!d || d.error) return null;
   const base = range==='1d' ? d.prevClose : d.close?.[0];
   if (d.price==null || !base) return null;
   return (d.price-base)/base*100;
 }
 function isOpen(d){
+  if (!d || d.error) return false;
   const now = Date.now()/1000;
-  return d.tradingStart && d.tradingEnd && now>=d.tradingStart && now<=d.tradingEnd && (now - (d.marketTime||0)) < 3600;
+  return !!(d.tradingStart && d.tradingEnd && now>=d.tradingStart && now<=d.tradingEnd && (now - (d.marketTime||0)) < 3600);
 }
 function timeStr(t, tz){
   if(!t) return '';
   try { return new Date(t*1000).toLocaleString('ko-KR',{timeZone:tz||undefined, month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false}); }
   catch { return new Date(t*1000).toLocaleString('ko-KR'); }
 }
+function nameOf(s){ return labels[s] || (watch.find(w=>w[0]===s)||[])[1] || data[s]?.name || s; }
 
-function spark(d, w=230, h=46){
-  const c = d.close||[]; if (c.length<2) return '<svg class="spark"></svg>';
-  let base = range==='1d' ? d.prevClose : null;
+let gid = 0;
+function spark(d, h=44, cssClass='spark'){
+  const c = d?.close||[]; const w = 240;
+  if (c.length<2) return `<svg class="${cssClass}"></svg>`;
+  const base = range==='1d' ? d.prevClose : null;
   let mn = Math.min(...c), mx = Math.max(...c);
   if (base!=null){ mn=Math.min(mn,base); mx=Math.max(mx,base); }
-  const pad=3, sx = (w)/(c.length-1), sy = mx===mn?0:(h-pad*2)/(mx-mn);
+  const pad=3, sx = w/(c.length-1), sy = mx===mn?0:(h-pad*2)/(mx-mn);
   const pts = c.map((v,i)=>[i*sx, h-pad-(v-mn)*sy]);
   const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
   const col = `var(--${cls(periodChg(d)??0)})`;
-  const id = 'g'+Math.random().toString(36).slice(2,8);
-  const bl = base!=null ? `<line x1="0" x2="${w}" y1="${(h-pad-(base-mn)*sy).toFixed(1)}" y2="${(h-pad-(base-mn)*sy).toFixed(1)}" stroke="var(--muted)" stroke-dasharray="2 3" stroke-width="1" opacity=".6"/>` : '';
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-    <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
-    ${bl}<path d="${line}L${w},${h}L0,${h}Z" fill="url(#${id})"/><path d="${line}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+  const id = 'g'+(gid++);
+  const by = base!=null ? (h-pad-(base-mn)*sy).toFixed(1) : null;
+  return `<svg class="${cssClass}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".25"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    ${by!=null?`<line x1="0" x2="${w}" y1="${by}" y2="${by}" stroke="var(--muted)" stroke-dasharray="2 3" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".55"/>`:''}
+    <path d="${line}L${w},${h}L0,${h}Z" fill="url(#${id})"/><path d="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+}
+function chgHTML(d, sym){
+  const c = chg(d); if (!c) return '<span class="flat">–</span>';
+  const dg = digits(sym, d.price);
+  return `<span class="pill ${cls(c.a)} num">${arrow(c.a)} ${pct(Math.abs(c.p),false)}</span><span class="${cls(c.a)} num">${c.a>0?'+':c.a<0?'−':''}${fmt(Math.abs(c.a),dg)}</span>`;
+}
+function rangeBar(d, dg){
+  if (!d.high52 || !d.low52 || d.high52<=d.low52) return '';
+  const p = Math.max(0,Math.min(100,(d.price-d.low52)/(d.high52-d.low52)*100));
+  return `<div class="rng"><div class="t num"><span>52주 ${fmt(d.low52,dg)}</span><span>${fmt(d.high52,dg)}</span></div><div class="rbar"><i style="left:${p}%"></i></div></div>`;
 }
 
+// ---------- hero ----------
+function renderHero(){
+  $('hero').innerHTML = HERO.map(s => {
+    const d = data[s];
+    if (!d) return `<div class="panel hc"><div class="lbl">${labels[s]}</div><div class="skel" style="height:30px;width:60%"></div><div class="skel" style="height:70px;margin:12px -18px 0"></div></div>`;
+    if (d.error) return `<div class="panel hc"><div class="lbl">${labels[s]}</div><div class="err" style="padding-bottom:16px">데이터를 불러오지 못했어요</div></div>`;
+    const dg = digits(s,d.price), open = isOpen(d);
+    return `<div class="panel hc" data-sym="${esc(s)}">
+      <div class="lbl"><span>${labels[s]}</span><span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'}</span></div>
+      <div class="px num">${fmt(d.price,dg)}</div>
+      <div class="ch">${chgHTML(d,s)}</div>
+      ${spark(d,70,'')}
+    </div>`;
+  }).join('');
+}
+
+// ---------- heatmap ----------
+function tileStyle(p){
+  if (p==null || isNaN(p)) return 'background:var(--panel2);color:var(--muted)';
+  const k = Math.min(Math.abs(p)/3,1), mix = Math.round(10 + k*80);
+  const col = p>=0 ? 'var(--up)' : 'var(--down)';
+  return `background:color-mix(in srgb,${col} ${mix}%,var(--panel2));color:${mix>48?'#fff':'var(--text)'}`;
+}
+function renderHeat(){
+  $('heat').innerHTML = GROUPS.map(g => `<div class="hrow"><span>${g.title}</span><div class="tiles">${
+    g.items.map(([s,n]) => { const c = chg(data[s]); return `<div class="tile" data-sym="${esc(s)}" style="${tileStyle(c?.p)}" title="${esc(n)} ${pct(c?.p)}"><b>${esc(n)}</b><span class="num">${c?pct(c.p):'–'}</span></div>`; }).join('')
+  }</div></div>`).join('');
+}
+
+// ---------- cards / table ----------
 function card(sym, name, removable){
   const d = data[sym];
-  const x = removable ? `<button class="x" data-rm="${esc(sym)}" title="삭제">×</button>` : '';
-  if (!d) return `<div class="card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="skel"></div><div class="skel" style="height:40px"></div></div>`;
-  if (d.error) return `<div class="card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="err">데이터를 불러오지 못했어요 (${esc(d.error).slice(0,60)})</div></div>`;
-  const c = chg(d), pc = periodChg(d), dg = digits(sym, d.price);
-  const open = isOpen(d);
-  return `<div class="card" data-sym="${esc(sym)}">${x}
-    <div class="top"><div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)} · ${esc(d.exchange||'')}</div></div>
-    ${removable?'':`<span class="tag ${open?'live':''}">${open?'장중':'장마감'}</span>`}</div>
-    <div class="px">${fmt(d.price,dg)}<span class="cur">${esc(d.currency||'')}</span></div>
-    <div class="chg ${cls(c?.a)}">${c?`${sign(c.a)} ${fmt(Math.abs(c.a),dg)} (${c.p>0?'+':''}${fmt(c.p,2)}%)`:'–'}</div>
+  const x = removable ? `<button class="x" data-rm="${esc(sym)}" title="삭제" aria-label="삭제">×</button>` : '';
+  if (!d) return `<div class="panel card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="skel" style="width:55%;height:24px"></div><div class="skel" style="height:44px"></div></div>`;
+  if (d.error) return `<div class="panel card">${x}<div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div><div class="err">데이터를 불러오지 못했어요. 티커를 확인해 주세요.</div></div>`;
+  const dg = digits(sym, d.price), open = isOpen(d), pc = periodChg(d);
+  return `<div class="panel card" data-sym="${esc(sym)}">${x}
+    <div class="top"><div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)}</div></div>
+    ${removable?'':`<span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'}</span>`}</div>
+    <div class="px num">${fmt(d.price,dg)}<span class="cur">${esc(d.currency||'')}</span></div>
+    <div class="ch">${chgHTML(d,sym)}</div>
     ${spark(d)}
-    <div class="foot"><span>${RANGES.find(r=>r[0]===range)[1]} <b class="${cls(pc)}">${pc==null?'–':(pc>0?'+':'')+fmt(pc,2)+'%'}</b></span><span>${timeStr(d.marketTime,d.tz)}</span></div>
+    ${range!=='1d'?`<div class="sym num" style="margin-top:4px">${rlabel()} <b class="${cls(pc)}">${pct(pc)}</b></div>`:''}
+    ${rangeBar(d,dg)}
   </div>`;
+}
+function trow(sym, name, removable){
+  const d = data[sym];
+  const x = removable ? `<button class="x" data-rm="${esc(sym)}" title="삭제" aria-label="삭제">×</button>` : '<span></span>';
+  if (!d || d.error) return `<div class="trow"><div><div class="nm">${esc(name)}</div><div class="sym">${esc(sym)}</div></div><div class="r flat">${d?'데이터 없음':'…'}</div><div class="cabs"></div><div class="csp"></div><div class="c52"></div>${x}</div>`;
+  const dg = digits(sym,d.price), c = chg(d);
+  let r52 = '';
+  if (d.high52 && d.low52 && d.high52>d.low52){ const p=Math.max(0,Math.min(100,(d.price-d.low52)/(d.high52-d.low52)*100)); r52 = `<div class="rbar"><i style="left:${p}%"></i></div>`; }
+  return `<div class="trow" data-sym="${esc(sym)}">
+    <div style="min-width:0"><div class="nm">${esc(name||d.name)}</div><div class="sym">${esc(sym)}</div></div>
+    <div class="r num" style="font-weight:700">${fmt(d.price,dg)}</div>
+    <div class="r num cabs ${cls(c?.a)}">${c?(c.a>0?'+':c.a<0?'−':'')+fmt(Math.abs(c.a),dg):'–'}</div>
+    <div class="csp">${spark(d,30)}</div>
+    <div class="c52">${r52}</div>
+    ${x}
+  </div>`;
+}
+function tableHead(){ return `<div class="trow head"><div>종목</div><div class="r">현재가</div><div class="r cabs">전일 대비</div><div class="csp">추세 (${rlabel()})</div><div class="c52">52주 범위</div><span></span></div>`; }
+function list(items, removable){
+  if (view==='table') return `<div class="panel tbl">${tableHead()}${items.map(([s,n])=>trow2(s,n,removable)).join('')}</div>`;
+  return `<div class="grid">${items.map(([s,n])=>card(s,n,removable)).join('')}</div>`;
+}
+function trow2(sym,name,rm){
+  // 현재가 칸에 가격 + 등락률 배지를 같이 표시
+  const html = trow(sym,name,rm), c = chg(data[sym]);
+  if (!c) return html;
+  return html.replace(/(<div class="r num" style="font-weight:700">[^<]*<\/div>)/, `<div class="r"><div class="num" style="font-weight:700">${fmt(data[sym].price,digits(sym,data[sym].price))}</div><span class="pill ${cls(c.p)} num" style="margin-top:3px">${pct(c.p)}</span></div>`);
+}
+
+function renderGroups(){
+  const gs = cat==='all' ? GROUPS : GROUPS.filter(g=>g.id===cat);
+  if (view==='table'){
+    $('groups').innerHTML = `<div class="panel tbl">${tableHead()}${gs.map(g => (gs.length>1?`<div class="tgroup">${g.title}</div>`:'') + g.items.map(([s,n])=>trow2(s,n,false)).join('')).join('')}</div>`;
+  } else {
+    $('groups').innerHTML = gs.map(g => `${gs.length>1?`<div class="sh" style="margin-top:22px"><h2 style="font-size:14.5px;color:var(--text2)">${g.title}</h2></div>`:''}<div class="grid">${g.items.map(([s,n])=>card(s,n,false)).join('')}</div>`).join('');
+  }
+}
+
+function renderMkts(){
+  const m = [['국내','^KS11'],['미국','^GSPC'],['원자재','CL=F']];
+  $('mkts').innerHTML = m.map(([l,s]) => { const d=data[s]; if(!d) return ''; const o=isOpen(d); return `<span class="mk ${o?'open':''}"><i></i>${l} ${o?'장중':'장마감'}</span>`; }).join('');
 }
 
 function render(){
-  $('groups').innerHTML = GROUPS.map(g => `<section><div class="sh"><h2>${g.title}</h2></div><div class="grid">${g.items.map(([s,n])=>card(s,n,false)).join('')}</div></section>`).join('');
-  $('wgrid').innerHTML = watch.length ? watch.map(([s,n])=>card(s,n,true)).join('') : '<div class="empty">아직 관심종목이 없어요. 위 검색창에서 추가해 보세요.</div>';
-  $('wcount').textContent = watch.length ? watch.length+'개' : '';
-  $('strip').innerHTML = STRIP.map(s => { const d=data[s], c=chg(d); return `<div class="pill" data-sym="${s}"><span>${labels[s]}</span><b>${d&&!d.error?fmt(d.price,digits(s,d.price)):'–'}</b><span class="${cls(c?.p)}">${c?(c.p>0?'+':'')+fmt(c.p,2)+'%':''}</span></div>`; }).join('');
+  gid = 0;
+  renderMkts(); renderHero(); renderHeat();
+  $('wlist').innerHTML = watch.length ? list(watch, true) : '<div class="empty">아직 관심종목이 없어요. 위 검색창에서 추가해 보세요.</div>';
+  $('wcount').textContent = watch.length ? `${watch.length}개` : '';
+  renderGroups();
   if (openSym) renderModal();
 }
 
@@ -199,26 +421,34 @@ function allSymbols(){ return [...new Set([...GROUPS.flatMap(g=>g.items.map(i=>i
 
 let loading = false;
 async function load(syms){
+  const partial = !!syms;
   syms = syms || allSymbols();
-  if (loading && !arguments.length) return;
-  loading = true; $('dot').className='dot load'; $('stat').textContent='갱신 중…';
+  if (loading && !partial) return;
+  if (!partial) loading = true;
+  $('dot').className='load'; $('stat').textContent='갱신 중…';
   try {
-    const chunks = []; for (let i=0;i<syms.length;i+=16) chunks.push(syms.slice(i,i+16));
+    const chunks = []; for (let i=0;i<syms.length;i+=12) chunks.push(syms.slice(i,i+12));
     const res = await Promise.all(chunks.map(c => fetch(`/api/batch?range=${range}&symbols=${encodeURIComponent(c.join(','))}`).then(r=>r.json())));
     let errs = 0;
     res.forEach(r => Object.entries(r.data||{}).forEach(([k,v]) => { data[k]=v; if (v.error) errs++; }));
-    $('dot').className = 'dot ' + (errs===syms.length ? 'err' : 'ok');
-    $('stat').textContent = '마지막 갱신 ' + new Date().toLocaleTimeString('ko-KR',{hour12:false}) + (errs?` · ${errs}개 실패`:'') + ' · 1분마다 자동';
+    $('dot').className = errs===syms.length ? 'err' : 'ok';
+    $('stat').textContent = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' 갱신' + (errs?` · ${errs}개 실패`:'');
   } catch(e) {
-    $('dot').className='dot err'; $('stat').textContent='데이터 서버 연결 실패 — 잠시 후 다시 시도해 주세요';
+    $('dot').className='err'; $('stat').textContent='데이터 서버 연결 실패';
   }
-  loading = false; render();
+  if (!partial) loading = false;
+  render();
 }
 
-// ranges
-$('ranges').innerHTML = RANGES.map(([k,l])=>`<button data-r="${k}" class="${k===range?'on':''}">${l}</button>`).join('');
-$('ranges').onclick = e => { const r=e.target.dataset.r; if(!r||r===range) return; range=r; SS('dash.range',r);
-  [...$('ranges').children].forEach(b=>b.classList.toggle('on',b.dataset.r===r)); Object.keys(data).forEach(k=>delete data[k]); render(); load(); };
+// segmented controls
+function seg(el, items, cur, onPick){
+  el.innerHTML = items.map(([k,l])=>`<button data-k="${k}" class="${k===cur?'on':''}">${l}</button>`).join('');
+  el.onclick = e => { const b=e.target.closest('button'); if(!b) return; [...el.children].forEach(x=>x.classList.toggle('on',x===b)); onPick(b.dataset.k); };
+}
+function setRange(r){ if (r===range) return; range=r; SS('dash.range',r); seg($('ranges'), RANGES, range, setRange); Object.keys(data).forEach(k=>delete data[k]); render(); load(); }
+seg($('ranges'), RANGES, range, setRange);
+seg($('cats'), [['all','전체'],...GROUPS.map(g=>[g.id,g.title])], cat, k => { cat=k; SS('dash.cat',k); renderGroups(); });
+seg($('views'), [['card','카드'],['table','표']], view, k => { view=k; SS('dash.view',k); render(); });
 $('refresh').onclick = () => load();
 
 // clicks
@@ -239,7 +469,7 @@ function addSym(sym, name){
 function hideSug(){ $('sug').style.display='none'; sugItems=[]; sugIdx=-1; }
 function showSug(){
   if(!sugItems.length) return hideSug();
-  $('sug').innerHTML = sugItems.map((s,i)=>`<div data-i="${i}" class="${i===sugIdx?'on':''}"><b>${esc(s.symbol)} <span>${esc(s.name)}</span></b><span>${esc(s.exchange||'')} ${esc(s.type||'')}</span></div>`).join('');
+  $('sug').innerHTML = sugItems.map((s,i)=>`<div data-i="${i}" class="${i===sugIdx?'on':''}"><div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(s.symbol)}</b><em>${esc(s.name)}</em></div><span>${esc(s.exchange||'')} · ${esc(s.type||'')}</span></div>`).join('');
   $('sug').style.display='block';
 }
 $('q').oninput = () => { clearTimeout(st); const v=$('q').value.trim(); if(!v) return hideSug();
@@ -256,80 +486,88 @@ document.addEventListener('click', e => { if(!e.target.closest('.add')) hideSug(
 
 // modal
 let openSym = null;
-function nameOf(s){ return labels[s] || (watch.find(w=>w[0]===s)||[])[1] || data[s]?.name || s; }
-function openModal(s){ openSym=s; $('ov').classList.add('on'); renderModal(); }
-function closeModal(){ openSym=null; $('ov').classList.remove('on'); }
+function openModal(s){ openSym=s; $('ov').classList.add('on'); document.body.style.overflow='hidden'; renderModal(); }
+function closeModal(){ openSym=null; $('ov').classList.remove('on'); document.body.style.overflow=''; $('tip').style.display='none'; }
 $('ov').onclick = e => { if(e.target===$('ov')) closeModal(); };
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
 function renderModal(){
   const s=openSym, d=data[s]; if(!d) return;
-  const dg=digits(s,d.price), c=chg(d), pc=periodChg(d);
+  const dg=digits(s,d.price), pc=periodChg(d), open=isOpen(d);
   $('modal').innerHTML = `
-   <div class="mh"><div style="flex:1;min-width:200px"><div class="nm" style="font-size:18px">${esc(nameOf(s))}</div><div class="sym">${esc(s)} · ${esc(d.name)} · ${esc(d.exchange||'')}</div></div>
-   <div class="seg" id="mr">${RANGES.map(([k,l])=>`<button data-r="${k}" class="${k===range?'on':''}">${l}</button>`).join('')}</div>
-   <button class="btn" id="mclose">닫기</button></div>
-   <div style="margin-top:10px"><span class="px">${fmt(d.price,dg)}<span class="cur">${esc(d.currency||'')}</span></span>
-   <span class="chg ${cls(c?.a)}" style="margin-left:10px;font-size:15px">${c?`${sign(c.a)} ${fmt(Math.abs(c.a),dg)} (${c.p>0?'+':''}${fmt(c.p,2)}%)`:''}</span>
-   <span class="sym" style="margin-left:10px">${timeStr(d.marketTime,d.tz)} 기준</span></div>
-   <div style="position:relative">${d.error?'<div class="err">데이터 없음</div>':bigChart(d)}</div>
-   <div class="stats">
+   <div class="mh"><div class="t"><div class="nm">${esc(nameOf(s))}</div><div class="sym">${esc(s)} · ${esc(d.name||'')} · ${esc(d.exchange||'')}</div></div>
+   <div class="seg" id="mr"></div>
+   <button class="ibtn" id="mclose" aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+   ${d.error?'<div class="err">데이터를 불러오지 못했어요</div>':`
+   <div class="mp"><span class="px num">${fmt(d.price,dg)}<span class="cur" style="font-size:13px">${esc(d.currency||'')}</span></span>
+   <span class="ch" style="display:flex;gap:6px;align-items:center;font-weight:600">${chgHTML(d,s)}</span>
+   <span class="live ${open?'on':''}"><i></i>${open?'장중':'장마감'} · ${timeStr(d.marketTime,d.tz)} 기준</span></div>
+   <div style="position:relative">${bigChart(d)}</div>
+   <div class="stats num">
      <div><small>전일 종가</small><b>${fmt(d.prevClose,dg)}</b></div>
      <div><small>당일 고가 / 저가</small><b>${fmt(d.dayHigh,dg)} / ${fmt(d.dayLow,dg)}</b></div>
+     <div><small>기간 등락 (${rlabel()})</small><b class="${cls(pc)}">${pct(pc)}</b></div>
      <div><small>52주 최고</small><b>${fmt(d.high52,dg)}</b></div>
      <div><small>52주 최저</small><b>${fmt(d.low52,dg)}</b></div>
-     <div><small>기간 등락 (${RANGES.find(r=>r[0]===range)[1]})</small><b class="${cls(pc)}">${pc==null?'–':(pc>0?'+':'')+fmt(pc,2)+'%'}</b></div>
-     <div><small>52주 고점 대비</small><b>${d.high52?fmt((d.price/d.high52-1)*100,2)+'%':'–'}</b></div>
-   </div>`;
+     <div><small>52주 고점 대비</small><b class="${cls(d.high52?d.price/d.high52-1:0)}">${d.high52?pct((d.price/d.high52-1)*100):'–'}</b></div>
+   </div>`}`;
+  seg($('mr'), RANGES, range, setRange);
   $('mclose').onclick = closeModal;
-  $('mr').onclick = e => { const r=e.target.dataset.r; if(r && r!==range){ $('ranges').querySelector(`[data-r="${r}"]`).click(); } };
   const svg = $('modal').querySelector('svg.big'); if (svg) hookTip(svg, d, dg);
 }
 
-function bigChart(d){
-  const c=d.close||[], W=940, H=340, L=8, R=70, T=12, B=26;
-  if (c.length<2) return '<div class="err">차트 데이터가 부족해요</div>';
-  let mn=Math.min(...c), mx=Math.max(...c); const base = range==='1d'?d.prevClose:null;
+const CH = {W:940,H:340,L:8,R:72,T:14,B:28};
+function chartScale(d){
+  const c=d.close; let mn=Math.min(...c), mx=Math.max(...c); const base = range==='1d'?d.prevClose:null;
   if(base!=null){mn=Math.min(mn,base);mx=Math.max(mx,base);}
-  const padv=(mx-mn)*.06||1; mn-=padv; mx+=padv;
+  const padv=(mx-mn)*.08||1; return {mn:mn-padv, mx:mx+padv, base};
+}
+function bigChart(d){
+  const c=d.close||[], {W,H,L,R,T,B}=CH;
+  if (c.length<2) return '<div class="err">차트 데이터가 부족해요</div>';
+  const {mn,mx,base}=chartScale(d);
   const x=i=>L+i*(W-L-R)/(c.length-1), y=v=>T+(mx-v)*(H-T-B)/(mx-mn);
   const line=c.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join('');
   const col=`var(--${cls(periodChg(d)??0)})`, dg=digits(d.symbol,d.price);
   let grid=''; for(let k=0;k<=4;k++){ const v=mn+(mx-mn)*k/4, yy=y(v).toFixed(1);
-    grid+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${W-R+6}" y="${+yy+4}" font-size="11" fill="var(--muted)">${fmt(v,dg)}</text>`; }
-  let xl=''; const n=5; for(let k=0;k<n;k++){ const i=Math.round(k*(c.length-1)/(n-1)); xl+=`<text x="${x(i)}" y="${H-6}" font-size="11" fill="var(--muted)" text-anchor="${k===0?'start':k===n-1?'end':'middle'}">${axisLabel(d.ts[i],d.tz)}</text>`; }
-  const bl = base!=null?`<line x1="${L}" x2="${W-R}" y1="${y(base)}" y2="${y(base)}" stroke="var(--muted)" stroke-dasharray="3 4"/><text x="${L+4}" y="${y(base)-4}" font-size="10.5" fill="var(--muted)">전일 종가</text>`:'';
-  return `<svg class="big" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" data-w="${W}" data-l="${L}" data-r="${R}">
-   <defs><linearGradient id="bg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".2"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
-   ${grid}${xl}${bl}<path d="${line}L${x(c.length-1)},${H-B}L${L},${H-B}Z" fill="url(#bg1)"/>
-   <path d="${line}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    grid+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)" vector-effect="non-scaling-stroke"/><text x="${W-R+8}" y="${+yy+4}" font-size="11" fill="var(--muted)">${fmt(v,dg)}</text>`; }
+  let xl=''; const n=5; for(let k=0;k<n;k++){ const i=Math.round(k*(c.length-1)/(n-1)); xl+=`<text x="${x(i)}" y="${H-8}" font-size="11" fill="var(--muted)" text-anchor="${k===0?'start':k===n-1?'end':'middle'}">${axisLabel(d.ts[i],d.tz)}</text>`; }
+  const bl = base!=null?`<line x1="${L}" x2="${W-R}" y1="${y(base)}" y2="${y(base)}" stroke="var(--muted)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/><text x="${L+4}" y="${y(base)-5}" font-size="11" fill="var(--muted)">전일 종가 ${fmt(base,dg)}</text>`:'';
+  const lx=x(c.length-1), ly=y(c[c.length-1]);
+  return `<svg class="big" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+   <defs><linearGradient id="bg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+   ${grid}${xl}${bl}<path d="${line}L${lx},${H-B}L${L},${H-B}Z" fill="url(#bg1)"/>
+   <path d="${line}" fill="none" stroke="${col}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+   <circle cx="${lx}" cy="${ly}" r="4" fill="${col}"/>
    <line id="cx" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke" style="display:none"/>
-   <circle id="cd" r="4" fill="${col}" style="display:none"/></svg>`;
+   <circle id="cd" r="5" fill="${col}" stroke="var(--panel)" stroke-width="2" style="display:none"/></svg>`;
 }
 function axisLabel(t,tz){
   const o = range==='1d' ? {hour:'2-digit',minute:'2-digit',hour12:false} : range==='5d' ? {month:'numeric',day:'numeric',hour:'2-digit',hour12:false} : range==='5y'||range==='1y' ? {year:'2-digit',month:'numeric'} : {month:'numeric',day:'numeric'};
   try { return new Date(t*1000).toLocaleString('ko-KR',{...o,timeZone:tz||undefined}); } catch { return ''; }
 }
 function hookTip(svg, d, dg){
-  const W=940,H=340,L=8,R=70,T=12,B=26, c=d.close, tip=$('tip');
-  let mn=Math.min(...c), mx=Math.max(...c); const base=range==='1d'?d.prevClose:null;
-  if(base!=null){mn=Math.min(mn,base);mx=Math.max(mx,base);} const padv=(mx-mn)*.06||1; mn-=padv; mx+=padv;
-  svg.onmousemove = e => {
-    const r=svg.getBoundingClientRect(), fx=(e.clientX-r.left)/r.width*W;
+  const {W,H,L,R,T,B}=CH, c=d.close, tip=$('tip'), {mn,mx,base}=chartScale(d);
+  const move = (cx0, cy0) => {
+    const r=svg.getBoundingClientRect(), fx=(cx0-r.left)/r.width*W;
     const i=Math.max(0,Math.min(c.length-1,Math.round((fx-L)/(W-L-R)*(c.length-1))));
     const xx=L+i*(W-L-R)/(c.length-1), yy=T+(mx-c[i])*(H-T-B)/(mx-mn);
-    const cx=svg.querySelector('#cx'), cd=svg.querySelector('#cd');
-    cx.setAttribute('x1',xx); cx.setAttribute('x2',xx); cx.style.display=''; cd.setAttribute('cx',xx); cd.setAttribute('cy',yy); cd.style.display='';
-    const ref = base ?? c[0];
-    tip.innerHTML = `${timeStr(d.ts[i],d.tz)} · <b>${fmt(c[i],dg)}</b> (${((c[i]/ref-1)*100).toFixed(2)}%)`;
-    tip.style.display='block'; tip.style.left=Math.min(e.clientX+12, innerWidth-tip.offsetWidth-8)+'px'; tip.style.top=(e.clientY-34)+'px';
+    const lx=svg.querySelector('#cx'), cd=svg.querySelector('#cd');
+    lx.setAttribute('x1',xx); lx.setAttribute('x2',xx); lx.style.display=''; cd.setAttribute('cx',xx); cd.setAttribute('cy',yy); cd.style.display='';
+    const ref = base ?? c[0], p=(c[i]/ref-1)*100;
+    tip.innerHTML = `${timeStr(d.ts[i],d.tz)} · <b>${fmt(c[i],dg)}</b> <span style="opacity:.8">(${pct(p)})</span>`;
+    tip.style.display='block'; tip.style.left=Math.max(8,Math.min(cx0+14, innerWidth-tip.offsetWidth-8))+'px'; tip.style.top=(cy0-38)+'px';
   };
-  svg.onmouseleave = () => { tip.style.display='none'; svg.querySelector('#cx').style.display='none'; svg.querySelector('#cd').style.display='none'; };
+  const hide = () => { tip.style.display='none'; svg.querySelector('#cx').style.display='none'; svg.querySelector('#cd').style.display='none'; };
+  svg.onmousemove = e => move(e.clientX, e.clientY);
+  svg.ontouchmove = e => { const t=e.touches[0]; move(t.clientX,t.clientY); };
+  svg.onmouseleave = hide; svg.ontouchend = hide;
 }
 
 render(); load();
 setInterval(() => { if (!document.hidden) load(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (!theme) applyTheme(); });
 </script>
 </body>
 </html>
