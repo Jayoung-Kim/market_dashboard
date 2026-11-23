@@ -1,0 +1,6 @@
+{
+  "name": "market-dashboard",
+  "private": true,
+  "description": "코스피·나스닥·ETF·금/은·유가 시황 대시보드 (Yahoo Finance)",
+  "engines": { "node": ">=18" }
+}
