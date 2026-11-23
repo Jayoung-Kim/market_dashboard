@@ -62,6 +62,9 @@ section:first-child{margin-top:4px}
 .sh{display:flex;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
 .sh h2{font-size:17px;margin:0;font-weight:750;letter-spacing:-.02em}
 .sh small{color:var(--muted);font-size:12.5px}
+.banner{background:color-mix(in srgb,#f2a516 16%,var(--panel));border:1px solid color-mix(in srgb,#f2a516 55%,transparent);color:var(--text);border-radius:12px;padding:11px 14px 11px 40px;font-size:13.5px;margin-bottom:16px;position:relative;line-height:1.55}
+.banner::before{content:"⚠";position:absolute;left:14px;top:10px;font-size:16px;color:#d48806}
+.banner a{color:var(--accent);font-weight:600;margin-left:6px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
 
 /* hero */
@@ -207,6 +210,7 @@ footer{color:var(--muted);font-size:12px;margin-top:44px;text-align:center;line-
 </div></header>
 
 <main>
+  <div class="banner" id="banner" role="status" style="display:none"></div>
   <section><div class="hero" id="hero"></div></section>
 
   <section>
@@ -484,15 +488,37 @@ function applyRT(sym){
   if (d.ts && d.close && q.time && (!d.ts.length || q.time > d.ts[d.ts.length-1]) && d.rtOpen){ d.ts = [...d.ts, q.time]; d.close = [...d.close, q.price]; }
   else if (d.close?.length && d.rtOpen){ d.close = [...d.close.slice(0,-1), q.price]; }
 }
+// 테스트: 주소 뒤에 ?rt=off 를 붙이면 네이버 연결이 막힌 상황처럼 동작
+const RT_TEST_OFF = new URLSearchParams(location.search).get('rt')==='off';
+let rtFailed = false;
+function setRTFailed(f){
+  if (f === rtFailed) return;
+  rtFailed = f;
+  if (f){ Object.keys(rtCache).forEach(k=>delete rtCache[k]); rtOpen = false; load(); } // Yahoo 값으로 다시 채움
+  renderBanner();
+}
+function renderBanner(){
+  const el = $('banner');
+  el.style.display = rtFailed ? '' : 'none';
+  if (!rtFailed) return;
+  el.innerHTML = `<b>국내 지표가 약 20분 지연되고 있어요.</b> 실시간 시세(네이버 증권)에 연결할 수 없어 Yahoo Finance 시세로 보여주는 중이에요. 연결되면 자동으로 실시간으로 돌아가요.`
+    + (RT_TEST_OFF ? ` <a href="${location.pathname}">테스트 모드 끄기</a>` : '');
+}
 async function loadRT(){
   const syms = allSymbols().filter(krCode);
   if (!syms.length) return;
+  rtLast = Date.now();
   try {
-    const j = await fetch('/api/kr?codes='+encodeURIComponent([...new Set(syms.map(krCode))].join(','))).then(r=>r.json());
+    if (RT_TEST_OFF) throw new Error('test');
+    const r = await fetch('/api/kr?codes='+encodeURIComponent([...new Set(syms.map(krCode))].join(',')));
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json(), qs = Object.values(j.data||{});
+    if (!qs.length || qs.every(q => q.error || q.price==null)) throw new Error('no data');
+    setRTFailed(false);
     Object.assign(rtCache, j.data||{});
-    rtOpen = Object.values(j.data||{}).some(q => q.status==='OPEN'); rtLast = Date.now();
+    rtOpen = qs.some(q => q.status==='OPEN');
     syms.forEach(applyRT); render();
-  } catch {}
+  } catch { setRTFailed(true); }
 }
 
 let loading = false;
